@@ -14,6 +14,8 @@ CUSTOMER_FIELDS = (
     "manager_name",
     "phone",
     "identifier",
+    "slug",
+    "capacity",
     "start_date",
     "expiration_date",
     "deleted_at",
