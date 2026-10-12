@@ -1,0 +1,55 @@
+# Local secrets and developer configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+.local-secret
+.idea/
+.vscode/
+
+# Python environments, caches, and generated files
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+
+# Local databases, uploaded files, and collected static assets
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+media/
+uploads/
+staticfiles/
+
+# JavaScript dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+
+# Browser-test artifacts and runtime output
+playwright-report/
+test-results/
+playwright/.cache/
+e2e/artifacts/
+*.log
+*.pid
+.cache/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
