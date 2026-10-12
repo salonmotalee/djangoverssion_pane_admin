@@ -46,6 +46,7 @@ import {
   Submit,
 } from "./ui";
 import { ActivityList } from "./dashboard";
+import { PortalAccess } from "./portal-provision";
 
 export function CustomerForm({
   customer,
@@ -61,6 +62,9 @@ export function CustomerForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const toast = useToast();
+  const { user } = useAuth();
+  const canProvision = user?.role !== "operator";
+  const [provision, setProvision] = useState(false);
   return (
     <Modal
       wide
@@ -105,6 +109,18 @@ export function CustomerForm({
               start_date: start,
               expiration_date: expiration,
             };
+            const capacity = latinDigits(
+              String(form.get("capacity") || ""),
+            ).trim();
+            if (capacity) body.capacity = Number(capacity);
+            if (!customer) {
+              const slug = String(form.get("slug") || "").trim();
+              if (slug) body.slug = slug;
+              if (provision && canProvision) {
+                body.login_username = form.get("login_username");
+                body.login_password = form.get("login_password");
+              }
+            }
             const identifier = String(form.get("identifier") || "").trim();
             if (!customer && identifier) body.identifier = identifier;
             const result = await mutate<Customer>(
@@ -185,6 +201,45 @@ export function CustomerForm({
             required
             disabled={pending}
           />
+          <Field
+            label="ظرفیت مجموعه"
+            required={!customer || customer.capacity !== null}
+            hint={
+              customer?.capacity === null
+                ? "ظرفیت قدیمی نامشخص است؛ برای راه‌اندازی پرتال ظرفیت واقعی را ثبت کنید."
+                : "حداکثر تعداد دانش‌آموز قابل پذیرش؛ آمار اشغال نیست."
+            }
+          >
+            <input
+              name="capacity"
+              type="number"
+              min={1}
+              max={2147483647}
+              required={!customer || customer.capacity !== null}
+              defaultValue={customer?.capacity ?? ""}
+              disabled={pending}
+              dir="ltr"
+            />
+          </Field>
+          <Field
+            label="نشانی اختصاصی پرتال"
+            hint={
+              customer
+                ? "نشانی ثابت است و پس از ثبت تغییر نمی‌کند."
+                : "مثلاً aftab؛ خالی بگذارید تا خودکار تولید شود."
+            }
+          >
+            <input
+              name="slug"
+              dir="ltr"
+              defaultValue={customer?.slug || ""}
+              readOnly={!!customer}
+              maxLength={48}
+              disabled={pending}
+              placeholder="aftab"
+              pattern="[a-z0-9]+(-[a-z0-9]+)*"
+            />
+          </Field>
           <DateField
             label="تاریخ پایان سرویس"
             value={expiration}
@@ -193,6 +248,50 @@ export function CustomerForm({
             disabled={pending}
           />
         </div>
+        {!customer && canProvision && (
+          <div className="portal-provision-fields">
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={provision}
+                onChange={(event) => setProvision(event.target.checked)}
+                disabled={pending}
+              />
+              <span>هم‌زمان ورود اختصاصی مجموعه را راه‌اندازی کن</span>
+            </label>
+            {provision && (
+              <div className="form-grid">
+                <Field label="نام کاربری پرتال" required>
+                  <input
+                    name="login_username"
+                    required
+                    minLength={3}
+                    maxLength={64}
+                    dir="ltr"
+                    autoComplete="off"
+                    disabled={pending}
+                    placeholder="aftab.manager"
+                  />
+                </Field>
+                <Field
+                  label="رمز ورود پرتال"
+                  required
+                  hint="حداقل ۱۰ نویسه؛ رمز خام بازگردانده نمی‌شود."
+                >
+                  <input
+                    name="login_password"
+                    type="password"
+                    minLength={10}
+                    required
+                    autoComplete="new-password"
+                    dir="ltr"
+                    disabled={pending}
+                  />
+                </Field>
+              </div>
+            )}
+          </div>
+        )}
         <div className="form-note">
           <CalendarClock size={18} />
           <p>
@@ -713,7 +812,7 @@ export function Customers() {
                       >
                         {customer.days_remaining < 0
                           ? `${number(Math.abs(customer.days_remaining))} روز گذشته`
-                          : `${number(customer.days_remaining)} روز باقی‌مانده`}
+                          : `${number(customer.subscription.remaining_days)} روز باقی‌مانده`}
                       </small>
                     </td>
                     <td>
@@ -911,7 +1010,7 @@ export function CustomerDetail({ id }: { id: number }) {
               <strong>
                 {data.days_remaining < 0
                   ? `${number(Math.abs(data.days_remaining))} روز از پایان سرویس گذشته`
-                  : `${number(data.days_remaining)} روز تا پایان سرویس`}
+                  : `${number(data.subscription.remaining_days)} روز اشتراک باقی‌مانده (با احتساب روز پایان)`}
               </strong>
               <p>
                 {data.status === "scheduled"
@@ -933,6 +1032,7 @@ export function CustomerDetail({ id }: { id: number }) {
           </div>
         </Panel>
       </div>
+      <PortalAccess customer={data} canManage={canManage} onSaved={saved} />
       {canManage && (
         <Panel
           title="تاریخچه این مجموعه"

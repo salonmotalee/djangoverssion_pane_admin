@@ -402,7 +402,8 @@ export function Dashboard() {
                         <span
                           className={`remaining ${item.days_remaining <= 7 ? "urgent" : ""}`}
                         >
-                          {number(item.days_remaining)} روز باقی‌مانده
+                          {number(item.subscription.remaining_days)} روز
+                          باقی‌مانده
                         </span>
                         <small>{shortDate(item.expiration_date)}</small>
                       </div>
