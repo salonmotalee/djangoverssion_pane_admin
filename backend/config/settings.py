@@ -3,6 +3,7 @@
 import os
 import secrets
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -39,6 +40,23 @@ if not SECRET_KEY:
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://127.0.0.1:3000/").strip()
+try:
+    frontend_url = urlsplit(FRONTEND_URL)
+    valid_frontend_url = (
+        frontend_url.scheme in {"http", "https"}
+        and frontend_url.hostname
+        and not frontend_url.username
+        and not frontend_url.password
+        and not frontend_url.query
+        and not frontend_url.fragment
+    )
+    frontend_url.port  # Validate the optional port as well as the hostname.
+except ValueError:
+    valid_frontend_url = False
+if not valid_frontend_url:
+    raise ImproperlyConfigured("FRONTEND_URL must be an absolute HTTP(S) URL without credentials or query.")
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
