@@ -78,7 +78,25 @@ def run_workflows(browser, username: str, password: str, artifacts: Path) -> int
         expect(page).to_have_url(re.compile(r"/login$"))
         assert_api(context.request.get(BASE_URL + "/api/customers/"), 401)
         snapshot(page, artifacts / "login.png")
+        # A failed CSRF preflight must not submit credentials; retry after the
+        # service recovers should complete the real authenticated login.
+        attempts = []
+        page.on("request", lambda request: attempts.append(request.url))
+        page.route(
+            "**/api/auth/csrf/",
+            lambda route: route.fulfill(status=503, body="Service unavailable"),
+        )
+        form = page.get_by_test_id("login-form")
+        form.locator('input[name="username"]').fill(username)
+        form.locator('input[name="password"]').fill(password)
+        form.get_by_role("button", name="ورود به مدار").click()
+        expect(page.get_by_text("سرویس ورود در دسترس نیست. کمی بعد دوباره تلاش کنید.")).to_be_visible()
+        assert not any(url.endswith("/api/auth/login/") for url in attempts)
+        page.unroute("**/api/auth/csrf/")
+        attempts.clear()
         login(page, username, password)
+        assert sum(url.endswith("/api/auth/csrf/") for url in attempts) == 1
+        checks += 1
         data = assert_api(context.request.get(BASE_URL + "/api/dashboard/"))
         assert data["metrics"]["total_customers"] == 0
         assert data["metrics"]["active_administrators"] == 1
