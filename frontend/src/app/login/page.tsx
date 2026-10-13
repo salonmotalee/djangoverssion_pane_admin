@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/providers";
 import { Field, InlineError, Logo } from "@/components/ui";
-import { ensureCsrf, mutate, resetCsrf } from "@/lib/api";
+import { mutate, resetCsrf } from "@/lib/api";
 import type { User } from "@/lib/types";
 export default function Login() {
   const { user, setUser } = useAuth();
@@ -89,7 +89,6 @@ export default function Login() {
               setError(null);
               const data = new FormData(event.currentTarget);
               try {
-                await ensureCsrf();
                 const result = await mutate<User>("auth/login/", "POST", {
                   username: data.get("username"),
                   password: data.get("password"),

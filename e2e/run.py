@@ -6,6 +6,7 @@ or credentials are retained; artifacts (screenshots and logs) are gitignored.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import secrets
@@ -92,9 +93,12 @@ def exercise(browser, username: str, password: str) -> int:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dev", action="store_true", help="Exercise the combined npm development launcher")
+    args = parser.parse_args()
     if not PYTHON.is_file() or not NPM:
         raise RuntimeError("Install the backend .venv and Node/npm first (see README)")
-    if not (FRONTEND / ".next" / "BUILD_ID").is_file():
+    if not args.dev and not (FRONTEND / ".next" / "BUILD_ID").is_file():
         raise RuntimeError("Run npm run build inside frontend first")
     check_ports()
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
@@ -154,7 +158,7 @@ def main() -> None:
             check=True,
         )
         try:
-            for name, command, directory in (
+            services = (
                 (
                     "backend",
                     [
@@ -180,7 +184,10 @@ def main() -> None:
                     ],
                     FRONTEND,
                 ),
-            ):
+            )
+            if args.dev:
+                services = (("frontend", [str(NPM), "run", "dev", "--", "--port", "3000"], FRONTEND),)
+            for name, command, directory in services:
                 handle = (ARTIFACTS / f"{name}.log").open("w", encoding="utf-8")
                 handles.append(handle)
                 servers.append(
@@ -194,7 +201,7 @@ def main() -> None:
                     )
                 )
             wait_ready("http://127.0.0.1:8000/api/auth/csrf/", servers[0])
-            wait_ready("http://127.0.0.1:3000/login", servers[1])
+            wait_ready("http://127.0.0.1:3000/login", servers[-1])
             with sync_playwright() as playwright:
                 executable = os.environ.get("E2E_BROWSER_PATH")
                 browser = playwright.chromium.launch(
@@ -210,6 +217,7 @@ def main() -> None:
                         json.dumps(
                             {
                                 "status": "passed",
+                                "mode": "development" if args.dev else "production",
                                 "workflows": checks,
                                 "completed_at": datetime.now(UTC).isoformat(),
                             },

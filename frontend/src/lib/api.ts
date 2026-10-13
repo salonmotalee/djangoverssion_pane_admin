@@ -13,16 +13,20 @@ export class ApiError extends Error {
   }
 }
 export async function ensureCsrf() {
-  const response = await fetch("/api/auth/csrf/", {
-    credentials: "include",
-    cache: "no-store",
-  });
-  if (!response.ok)
-    throw new ApiError(
-      "ارتباط امن با سرور برقرار نشد. دوباره تلاش کنید.",
-      response.status,
-    );
-  const result = await response.json();
+  const unavailable = "سرویس ورود در دسترس نیست. کمی بعد دوباره تلاش کنید.";
+  let response: Response;
+  try {
+    response = await fetch("/api/auth/csrf/", {
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiError(unavailable, 0);
+  }
+  if (!response.ok) throw new ApiError(unavailable, response.status);
+  const result = await response.json().catch(() => null);
+  if (typeof result?.csrfToken !== "string" || !result.csrfToken)
+    throw new ApiError(unavailable, response.status);
   csrfToken = result.csrfToken;
   return csrfToken;
 }
@@ -34,14 +38,14 @@ export async function api<T>(
   const mutating = !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
   // Central and portal logins rotate the shared CSRF cookie independently of
   // their separate sessions. Refresh before writes, including across tabs.
-  if (mutating) await ensureCsrf();
+  const token = mutating ? await ensureCsrf() : "";
   const response = await fetch(`/api/${path}`, {
     ...options,
     credentials: "include",
     cache: "no-store",
     headers: {
       ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(mutating ? { "X-CSRFToken": csrfToken } : {}),
+      ...(mutating ? { "X-CSRFToken": token } : {}),
       ...options.headers,
     },
   });
