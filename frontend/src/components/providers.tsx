@@ -9,6 +9,8 @@ import {
 import { CheckCircle2, CircleAlert, X } from "lucide-react";
 import { api, ApiError, mutate, resetCsrf } from "@/lib/api";
 import type { User } from "@/lib/types";
+import { usePathname } from "next/navigation";
+import { CENTRAL_ROUTES } from "@/lib/routing";
 
 type Session = {
   user: User | null;
@@ -29,6 +31,8 @@ export const useAuth = () => {
 };
 export const useToast = () => useContext(ToastContext);
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const central = CENTRAL_ROUTES.includes(pathname.split("/")[1] || "");
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +53,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, []);
   useEffect(() => {
+    if (!central) return;
     const controller = new AbortController();
     api<User>("auth/me/", { signal: controller.signal })
       .then(setUser)
@@ -70,7 +75,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       controller.abort();
       window.removeEventListener("madar:session-expired", expired);
     };
-  }, []);
+  }, [central]);
   const toast = useCallback(
     (message: string, variant: "success" | "error" = "success") => {
       const id = Date.now() + Math.random();

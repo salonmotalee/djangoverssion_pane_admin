@@ -19,6 +19,7 @@ router.register("users", UserViewSet, basename="user")
 router.register("audit", AuditViewSet, basename="audit")
 
 urlpatterns = [
+    path("organizations/", include("portal.urls")),
     path("auth/csrf/", CsrfView.as_view()),
     path("auth/login/", LoginView.as_view()),
     path("auth/logout/", LogoutView.as_view()),

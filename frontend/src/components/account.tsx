@@ -217,7 +217,8 @@ export function Alerts() {
                       <span
                         className={`remaining ${item.days_remaining <= 7 ? "urgent" : ""}`}
                       >
-                        {number(item.days_remaining)} روز باقی‌مانده
+                        {number(item.subscription.remaining_days)} روز
+                        باقی‌مانده
                       </span>
                     </td>
                     <td>
@@ -246,6 +247,9 @@ export function Alerts() {
   );
 }
 const auditActionNames: Record<string, string> = {
+  configure_portal: "تنظیم ورود پرتال",
+  portal_login: "ورود مجموعه",
+  portal_logout: "خروج مجموعه",
   create_customer: "ایجاد مجموعه",
   update_customer: "ویرایش مجموعه",
   delete_customer: "حذف مجموعه",
@@ -261,6 +265,8 @@ const auditActionNames: Record<string, string> = {
   logout: "خروج",
 };
 const changeLabels: Record<string, string> = {
+  slug: "نشانی اختصاصی",
+  capacity: "ظرفیت مجموعه",
   name: "نام مجموعه",
   manager_name: "نام مدیر",
   phone: "تلفن",

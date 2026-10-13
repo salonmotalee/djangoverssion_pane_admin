@@ -16,12 +16,12 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import AuditLog, Customer, User
-from .permissions import IsAdministrator
+from .permissions import IsAdministrator, IsInternalUser
 from .serializers import (
     AuditSerializer,
     CustomerSerializer,
@@ -93,7 +93,7 @@ class LoginView(APIView):
                 failed_login(counters)
                 return Response({"detail": "نام کاربری یا رمز عبور صحیح نیست."}, status=400)
             successful_login(counters, keys[0][0])
-            login(request, user)
+            login(request, user, backend="core.authentication.InternalBackend")
             record_audit(user, "login", user, "ورود به سامانه")
         return Response(UserSerializer(user).data)
 
@@ -160,7 +160,11 @@ def date_range(params, lower_name, upper_name):
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAdministrator]
-    queryset = User.objects.all().order_by("-date_joined", "-pk")
+    queryset = (
+        User.objects.filter(organization__isnull=True)
+        .exclude(role=User.Role.TENANT)
+        .order_by("-date_joined", "-pk")
+    )
     http_method_names = ["get", "post", "patch", "put", "delete", "head", "options"]
 
     def get_queryset(self):
@@ -263,16 +267,16 @@ def status_filter(queryset, value, today=None):
 
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsInternalUser]
     http_method_names = ["get", "post", "patch", "put", "delete", "head", "options"]
 
     def get_permissions(self):
-        if self.action in {"destroy", "restore", "export"}:
+        if self.action in {"destroy", "restore", "export", "portal"}:
             return [IsAdministrator()]
         return super().get_permissions()
 
     def get_queryset(self):
-        queryset = Customer.objects.all()
+        queryset = Customer.objects.prefetch_related("portal_accounts").all()
         params = self.request.query_params
         deleted = params.get("deleted", "all" if self.action == "restore" else "active")
         if deleted == "active":
@@ -359,6 +363,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
             before = snapshot(customer, CUSTOMER_FIELDS)
             customer.deleted_at = timezone.now()
             customer.save(update_fields=["deleted_at", "updated_at"])
+            from django.db.models import F
+
+            User.objects.filter(organization=customer).update(
+                portal_session_version=F("portal_session_version") + 1
+            )
             record_audit(
                 self.request.user,
                 "delete_customer",
@@ -367,6 +376,18 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 before,
                 CUSTOMER_FIELDS,
             )
+
+    @action(detail=True, methods=["post"])
+    def portal(self, request, pk=None):
+        from portal.serializers import PortalCredentialsSerializer
+        from portal.services import provision_portal
+
+        customer = self.get_object()
+        serializer = PortalCredentialsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        provision_portal(customer, serializer.validated_data, request.user)
+        fresh = Customer.objects.prefetch_related("portal_accounts").get(pk=customer.pk)
+        return Response(CustomerSerializer(fresh, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
     def restore(self, request, pk=None):

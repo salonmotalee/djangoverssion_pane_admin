@@ -8,6 +8,9 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
+
+from .routing import generate_slug, validate_portal_slug
 
 
 class InternalUserManager(UserManager):
@@ -21,14 +24,21 @@ class User(AbstractUser):
         SUPER_ADMIN = "super_admin", "مدیر ارشد"
         ADMIN = "admin", "مدیر"
         OPERATOR = "operator", "اپراتور"
+        TENANT = "tenant", "کاربر مجموعه"
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.OPERATOR, db_index=True)
     objects = InternalUserManager()
+    organization = models.ForeignKey(
+        "Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="portal_accounts"
+    )
+    portal_username = models.CharField(max_length=64, blank=True, default="")
+    is_portal_owner = models.BooleanField(default=False)
+    portal_session_version = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [
             models.CheckConstraint(
-                condition=Q(role__in=["super_admin", "admin", "operator"]), name="user_valid_role"
+                condition=Q(role__in=["super_admin", "admin", "operator", "tenant"]), name="user_valid_role"
             ),
             models.CheckConstraint(
                 condition=(
@@ -36,6 +46,20 @@ class User(AbstractUser):
                     | (~Q(role="super_admin") & Q(is_superuser=False))
                 ),
                 name="user_super_role_consistent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    (Q(role="tenant", organization__isnull=False) & ~Q(portal_username=""))
+                    | Q(organization__isnull=True, portal_username="", is_portal_owner=False)
+                    & ~Q(role="tenant")
+                ),
+                name="user_authentication_realm",
+            ),
+            models.UniqueConstraint(
+                fields=["organization", "portal_username"], name="organization_unique_login"
+            ),
+            models.UniqueConstraint(
+                fields=["organization"], condition=Q(is_portal_owner=True), name="organization_one_owner"
             ),
         ]
 
@@ -50,6 +74,16 @@ class User(AbstractUser):
                 update_fields |= {"is_superuser", "is_staff"}
             kwargs["update_fields"] = update_fields
         super().save(*args, **kwargs)
+
+    def _get_session_auth_hash(self, secret=None):
+        if self.role == self.Role.TENANT:
+            return salted_hmac(
+                "damavand.portal.session",
+                f"{self.password}:{self.portal_session_version}",
+                secret=secret,
+                algorithm="sha256",
+            ).hexdigest()
+        return super()._get_session_auth_hash(secret)
 
 
 def generate_identifier():
@@ -70,6 +104,11 @@ class Customer(models.Model):
     identifier = models.CharField(
         max_length=32, unique=True, default=generate_identifier, validators=[identifier_validator]
     )
+    slug = models.SlugField(
+        max_length=48, unique=True, default=generate_slug, validators=[validate_portal_slug]
+    )
+    # Unknown legacy capacities remain unknown until explicitly configured.
+    capacity = models.PositiveIntegerField(null=True, blank=True)
     start_date = models.DateField(db_index=True)
     expiration_date = models.DateField(db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -85,7 +124,10 @@ class Customer(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=Q(expiration_date__gte=F("start_date")), name="customer_date_order"
-            )
+            ),
+            models.CheckConstraint(
+                condition=Q(capacity__isnull=True) | Q(capacity__gt=0), name="capacity_positive"
+            ),
         ]
 
     def __str__(self):
@@ -97,6 +139,8 @@ class Customer(models.Model):
             raise ValidationError({"expiration_date": "تاریخ پایان نمی‌تواند پیش از تاریخ شروع باشد."})
         if self.pk and type(self).objects.filter(pk=self.pk).exclude(identifier=self.identifier).exists():
             raise ValidationError({"identifier": "شناسه مشتری پس از ایجاد قابل تغییر نیست."})
+        if self.pk and type(self).objects.filter(pk=self.pk).exclude(slug=self.slug).exists():
+            raise ValidationError({"slug": "نشانی اختصاصی مجموعه پس از ایجاد قابل تغییر نیست."})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -117,6 +161,10 @@ class Customer(models.Model):
         if days <= 30:
             return "expiring"
         return "active"
+
+    @property
+    def portal_owner(self):
+        return next((account for account in self.portal_accounts.all() if account.is_portal_owner), None)
 
 
 class AuditLog(models.Model):

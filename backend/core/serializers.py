@@ -15,6 +15,9 @@ def check_password(password, user=None):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(
+        choices=[(choice, label) for choice, label in User.Role.choices if choice != "tenant"], required=False
+    )
     password = serializers.CharField(write_only=True, required=False, trim_whitespace=False)
 
     class Meta:
@@ -34,7 +37,17 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "date_joined", "last_login"]
 
     def validate(self, attrs):
-        forbidden = {"is_superuser", "is_staff", "groups", "user_permissions"} & set(self.initial_data)
+        forbidden = {
+            "is_superuser",
+            "is_staff",
+            "groups",
+            "user_permissions",
+            "organization",
+            "organization_id",
+            "portal_username",
+            "is_portal_owner",
+            "portal_session_version",
+        } & set(self.initial_data)
         if forbidden:
             raise serializers.ValidationError({key: "این فیلد مستقیماً قابل تغییر نیست." for key in forbidden})
         if self.instance is None and not attrs.get("password"):
@@ -97,6 +110,16 @@ class CustomerSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
     days_remaining = serializers.ReadOnlyField()
     phone = serializers.CharField(max_length=20)
+    slug = serializers.CharField(required=False, max_length=48)
+    capacity = serializers.IntegerField(min_value=1, max_value=2147483647, required=False, allow_null=True)
+    login_username = serializers.CharField(required=False, max_length=64)
+    login_password = serializers.CharField(
+        required=False, write_only=True, trim_whitespace=False, max_length=4096
+    )
+    portal_provisioned = serializers.SerializerMethodField()
+    portal_is_active = serializers.SerializerMethodField()
+    portal_url = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
@@ -106,6 +129,14 @@ class CustomerSerializer(serializers.ModelSerializer):
             "manager_name",
             "phone",
             "identifier",
+            "slug",
+            "capacity",
+            "login_username",
+            "login_password",
+            "portal_provisioned",
+            "portal_is_active",
+            "portal_url",
+            "subscription",
             "start_date",
             "expiration_date",
             "deleted_at",
@@ -115,6 +146,52 @@ class CustomerSerializer(serializers.ModelSerializer):
             "days_remaining",
         ]
         read_only_fields = ["id", "deleted_at", "created_at", "updated_at", "status", "days_remaining"]
+
+    def to_representation(self, instance):
+        # Credentials live on the existing Django User, never on the customer row.
+        result = super().to_representation(instance)
+        owner = instance.portal_owner
+        request = self.context.get("request")
+        result["login_username"] = (
+            owner.portal_username
+            if owner and request and request.user.role in {"super_admin", "admin"}
+            else None
+        )
+        return result
+
+    def get_portal_provisioned(self, customer):
+        return customer.portal_owner is not None
+
+    def get_portal_is_active(self, customer):
+        owner = customer.portal_owner
+        return bool(owner and owner.is_active and not customer.deleted_at)
+
+    def get_portal_url(self, customer):
+        from django.conf import settings
+
+        return f"{settings.FRONTEND_URL.rstrip('/')}/{customer.slug}"
+
+    def get_subscription(self, customer):
+        from portal.services import subscription
+
+        return subscription(customer)
+
+    def validate_slug(self, value):
+        from .routing import validate_portal_slug
+
+        try:
+            validate_portal_slug(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages) from exc
+        if self.instance and self.instance.slug != value:
+            raise serializers.ValidationError("نشانی پرتال پس از ایجاد قابل تغییر نیست.")
+        if (
+            Customer.objects.filter(slug=value)
+            .exclude(pk=self.instance.pk if self.instance else None)
+            .exists()
+        ):
+            raise serializers.ValidationError("این نشانی قبلاً استفاده شده است.")
+        return value
 
     def validate_identifier(self, value):
         if self.instance:
@@ -160,11 +237,58 @@ class CustomerSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"deleted_at": "برای حذف یا بازیابی از عملیات مربوط استفاده کنید."}
             )
+        if "capacity" in attrs and (
+            attrs["capacity"] is None or isinstance(self.initial_data.get("capacity"), bool)
+        ):
+            raise serializers.ValidationError({"capacity": "ظرفیت باید عدد مثبت باشد."})
+        if "login_username" in attrs or "login_password" in attrs:
+            request = self.context.get("request")
+            if not request or request.user.role not in {"admin", "super_admin"}:
+                raise serializers.ValidationError(
+                    {"login_username": "فقط مدیران می‌توانند ورود پرتال را راه‌اندازی کنند."}
+                )
+            if self.instance:
+                raise serializers.ValidationError(
+                    {"login_password": "برای تغییر دسترسی از بخش تنظیم ورود پرتال استفاده کنید."}
+                )
+            from portal.serializers import PortalCredentialsSerializer
+
+            portal = PortalCredentialsSerializer(
+                data={
+                    key: attrs[key]
+                    for key in ("login_username", "login_password", "capacity")
+                    if key in attrs
+                }
+            )
+            portal.is_valid(raise_exception=True)
+            if (
+                not portal.validated_data.get("login_username")
+                or not portal.validated_data.get("login_password")
+                or not attrs.get("capacity")
+            ):
+                raise serializers.ValidationError(
+                    {"login_password": "نام کاربری، رمز قوی و ظرفیت برای راه‌اندازی پرتال الزامی است."}
+                )
+            check_password(attrs["login_password"], User(username=portal.validated_data["login_username"]))
+            attrs["login_username"] = portal.validated_data["login_username"]
         return attrs
 
     def create(self, validated_data):
+        from django.db import transaction
+
+        from portal.services import provision_portal
+
+        portal_data = {
+            key: validated_data.pop(key)
+            for key in ("login_username", "login_password")
+            if key in validated_data
+        }
         try:
-            return super().create(validated_data)
+            with transaction.atomic():
+                customer = super().create(validated_data)
+                if portal_data:
+                    provision_portal(customer, portal_data, self.context["request"].user)
+                return customer
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.message_dict) from exc
 
@@ -188,6 +312,11 @@ class RenewalSerializer(serializers.Serializer):
 
 
 class AuditActorSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+
+    def get_username(self, user):
+        return user.portal_username if user.role == User.Role.TENANT else user.username
+
     class Meta:
         model = User
         fields = ["id", "username", "first_name", "last_name"]

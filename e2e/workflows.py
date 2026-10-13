@@ -93,6 +93,10 @@ def run_workflows(browser, username: str, password: str, artifacts: Path) -> int
             page, context, username, password, artifacts
         )
 
+        from tenant_workflows import run_tenant_workflows
+
+        checks += run_tenant_workflows(page, context, artifacts)
+
         assert not errors, "Browser runtime errors: " + "; ".join(errors)
         return checks
     except Exception:
@@ -118,6 +122,7 @@ def customer_and_user_workflows(
     form.locator('input[name="name"]').fill(collection)
     form.locator('input[name="manager_name"]').fill("سارا رضایی")
     form.locator('input[name="phone"]').fill("07001234567")
+    form.locator('input[name="capacity"]').fill("120")
     start_input = form.get_by_label(re.compile("^تاریخ شروع سرویس"))
     start_input.fill("1405/13/10")
     start_input.press("Tab")
@@ -420,6 +425,7 @@ def user_and_security_workflows(
     form.locator('input[name="name"]').fill("مجموعه منقضی آزمایشی")
     form.locator('input[name="manager_name"]').fill("علی احمدی")
     form.locator('input[name="phone"]').fill("09351234567")
+    form.locator('input[name="capacity"]').fill("80")
     set_date(page, form, "تاریخ شروع سرویس", today - timedelta(days=90))
     set_date(page, form, "تاریخ پایان سرویس", today - timedelta(days=1))
     form.get_by_role("button", name="ثبت مجموعه", exact=True).click()

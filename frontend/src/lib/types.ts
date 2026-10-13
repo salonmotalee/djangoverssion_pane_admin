@@ -17,6 +17,13 @@ export type Customer = {
   manager_name: string;
   phone: string;
   identifier: string;
+  slug: string;
+  capacity: number | null;
+  portal_provisioned: boolean;
+  portal_is_active: boolean;
+  portal_url: string;
+  login_username: string | null;
+  subscription: Subscription;
   start_date: string;
   expiration_date: string;
   status: ServiceStatus;
@@ -24,6 +31,33 @@ export type Customer = {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+};
+export type Subscription = {
+  start_date: string;
+  expiration_date: string;
+  status: ServiceStatus;
+  remaining_days: number;
+  total_days: number;
+  elapsed_days: number;
+  progress_percent: number;
+  days_until_start: number;
+  days_since_expiration: number;
+  business_date: string;
+  end_date_inclusive: boolean;
+};
+export type OrganizationPublic = { name: string; slug: string };
+export type OrganizationSession = {
+  username: string;
+  organization: Pick<
+    Customer,
+    | "name"
+    | "manager_name"
+    | "phone"
+    | "identifier"
+    | "slug"
+    | "capacity"
+    | "subscription"
+  >;
 };
 export type Audit = {
   id: number;

@@ -32,7 +32,9 @@ export async function api<T>(
 ): Promise<T> {
   const method = options.method || "GET";
   const mutating = !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
-  if (mutating && !csrfToken) await ensureCsrf();
+  // Central and portal logins rotate the shared CSRF cookie independently of
+  // their separate sessions. Refresh before writes, including across tabs.
+  if (mutating) await ensureCsrf();
   const response = await fetch(`/api/${path}`, {
     ...options,
     credentials: "include",
@@ -48,6 +50,7 @@ export async function api<T>(
       response.status === 401 &&
       path !== "auth/login/" &&
       path !== "auth/me/" &&
+      !path.startsWith("organizations/") &&
       typeof window !== "undefined"
     ) {
       resetCsrf();
@@ -86,6 +89,10 @@ const fieldNames: Record<string, string> = {
   current_password: "رمز عبور فعلی",
   email: "ایمیل",
   role: "نقش",
+  slug: "نشانی اختصاصی",
+  capacity: "ظرفیت مجموعه",
+  login_username: "نام کاربری پرتال",
+  login_password: "رمز ورود پرتال",
 };
 export const mutate = <T>(path: string, method: string, body?: unknown) =>
   api<T>(path, {
