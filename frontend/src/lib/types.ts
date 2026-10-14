@@ -48,6 +48,7 @@ export type Subscription = {
 export type OrganizationPublic = { name: string; slug: string };
 export type OrganizationSession = {
   username: string;
+  operations?: import("./operations").OperationsSummary;
   organization: Pick<
     Customer,
     | "name"

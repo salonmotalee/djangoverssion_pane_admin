@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 import "./portal.css";
+import "./operations.css";
 export const metadata: Metadata = {
   title: { default: "مدار | فضای مدیریت", template: "%s | مدار" },
   description: "مدار، فضای یکپارچه مدیریت مجموعه‌ها و سرویس‌ها",

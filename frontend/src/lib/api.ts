@@ -97,6 +97,18 @@ const fieldNames: Record<string, string> = {
   capacity: "ظرفیت مجموعه",
   login_username: "نام کاربری پرتال",
   login_password: "رمز ورود پرتال",
+  first_name: "نام",
+  last_name: "نام خانوادگی",
+  primary_phone: "شماره همراه اصلی",
+  secondary_phone: "شماره همراه دوم",
+  desk_number: "شماره میز",
+  grade: "پایهٔ تحصیلی",
+  major: "رشتهٔ تحصیلی",
+  hall: "سالن",
+  start_time: "ساعت شروع",
+  end_time: "ساعت پایان",
+  is_active: "وضعیت",
+  assignments: "تخصیص پارت‌ها",
 };
 export const mutate = <T>(path: string, method: string, body?: unknown) =>
   api<T>(path, {

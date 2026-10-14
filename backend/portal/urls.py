@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from .views import (
     OrganizationDashboardView,
@@ -12,4 +12,5 @@ urlpatterns = [
     path("<slug:slug>/login/", OrganizationLoginView.as_view()),
     path("<slug:slug>/dashboard/", OrganizationDashboardView.as_view()),
     path("<slug:slug>/logout/", OrganizationLogoutView.as_view()),
+    path("<slug:slug>/", include("operations.urls")),
 ]
