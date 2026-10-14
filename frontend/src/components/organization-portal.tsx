@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Building2,
+  Clock3,
+  Grid2x2,
+  GraduationCap,
   ArrowUpLeft,
   CalendarDays,
   Check,
@@ -29,6 +33,13 @@ import { api, ApiError, mutate, resetCsrf } from "@/lib/api";
 import { date, number } from "@/lib/format";
 import type { OrganizationPublic, OrganizationSession } from "@/lib/types";
 import { Badge, InlineError, Spinner } from "./ui";
+import { OperationsContent } from "./study-operations";
+import { OperationsOverview } from "./operations-overview";
+import {
+  operationPages,
+  operationTitles,
+  type OperationPage,
+} from "@/lib/operations";
 import { DamavandBrand, MountainScene } from "./portal-scene";
 
 export function OrganizationLogin({
@@ -220,7 +231,15 @@ export function OrganizationLogin({
   );
 }
 
-export function OrganizationDashboard({ slug }: { slug: string }) {
+export function OrganizationDashboard({
+  slug,
+  page = "dashboard",
+  studentId,
+}: {
+  slug: string;
+  page?: "dashboard" | OperationPage;
+  studentId?: number;
+}) {
   const router = useRouter();
   const [session, setSession] = useState<OrganizationSession | null>(null),
     [error, setError] = useState<string | null>(null),
@@ -338,6 +357,14 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
         )}
       </main>
     );
+  const currentTitle =
+    page === "dashboard" ? "نمای کلی" : operationTitles[page];
+  const icons = {
+    halls: Building2,
+    "study-sessions": Clock3,
+    assignments: Grid2x2,
+    students: GraduationCap,
+  };
   const org = session.organization,
     sub = org.subscription;
   return (
@@ -375,23 +402,42 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
         </div>
         <span className="tenant-nav-label">فضای کار</span>
         <nav>
-          <a
-            href="#overview"
-            className="selected"
+          <Link
+            href={`/${slug}/dashboard`}
+            className={page === "dashboard" ? "selected" : ""}
             onClick={() => setMenu(false)}
           >
-            <LayoutDashboard size={19} />
-            نمای کلی
-            <ChevronLeft size={15} />
-          </a>
-          <a href="#subscription" onClick={() => setMenu(false)}>
+            <LayoutDashboard size={19} /> نمای کلی <ChevronLeft size={15} />
+          </Link>
+          {operationPages.map((item) => {
+            const Icon = icons[item];
+            return (
+              <Link
+                key={item}
+                href={`/${slug}/${item}`}
+                className={page === item ? "selected" : ""}
+                onClick={() => setMenu(false)}
+              >
+                <Icon size={19} />
+                {operationTitles[item]}
+                <ChevronLeft size={15} />
+              </Link>
+            );
+          })}
+          <Link
+            href={`/${slug}/dashboard#subscription`}
+            onClick={() => setMenu(false)}
+          >
             <CalendarDays size={19} />
             اشتراک و سرویس
-          </a>
-          <a href="#organization-profile" onClick={() => setMenu(false)}>
+          </Link>
+          <Link
+            href={`/${slug}/dashboard#organization-profile`}
+            onClick={() => setMenu(false)}
+          >
             <Fingerprint size={19} />
             اطلاعات مجموعه
-          </a>
+          </Link>
         </nav>
         <div className="tenant-side-note">
           <Sparkles size={23} />
@@ -422,7 +468,7 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
             <span>
               فضای مجموعه
               <ChevronLeft size={13} />
-              <strong>نمای کلی</strong>
+              <strong>{currentTitle}</strong>
             </span>
           </div>
           <div>
@@ -447,214 +493,217 @@ export function OrganizationDashboard({ slug }: { slug: string }) {
           </div>
         </header>
         <main className="tenant-main" id="overview">
-          <div className="tenant-heading">
-            <div>
-              <span className="eyebrow">یک چشم‌انداز روشن</span>
-              <h1>سلام، {org.manager_name}</h1>
-              <p>به فضای اختصاصی {org.name} خوش آمدید.</p>
-            </div>
-            <Badge status={sub.status} />
-          </div>
-          <InlineError message={error} />
-          {(sub.status === "expired" ||
-            sub.status === "expiring" ||
-            sub.status === "scheduled") && (
-            <div className={`tenant-notice ${sub.status}`} role="status">
-              <CalendarDays size={21} />
-              <div>
-                <strong>
-                  {sub.status === "expired"
-                    ? "زمان تمدید سرویس رسیده است"
-                    : sub.status === "scheduled"
-                      ? "سرویس شما به‌زودی آغاز می‌شود"
-                      : "تا پایان سرویس، فرصت کمی باقی مانده است"}
-                </strong>
-                <p>
-                  {sub.status === "expired"
-                    ? `${number(sub.days_since_expiration)} روز از پایان سرویس گذشته است. برای تمدید با مدیریت دماوند تماس بگیرید. دسترسی شما به داشبورد برقرار است.`
-                    : sub.status === "scheduled"
-                      ? `شروع سرویس در ${date(sub.start_date)}؛ ${number(sub.days_until_start)} روز دیگر.`
-                      : `${number(sub.remaining_days)} روز از اشتراک باقی مانده است؛ برای تمدید با مدیریت دماوند هماهنگ کنید.`}
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="tenant-overview-grid">
-            <section className="tenant-welcome">
-              <div className="tenant-welcome-art" aria-hidden="true">
-                <Mountain size={145} strokeWidth={0.7} />
-                <div />
-              </div>
-              <span className="tenant-chip">
-                <Sparkles size={14} />
-                همراه مسیر شما
-              </span>
-              <h2>
-                تمرکز شما بر رشد،
-                <br />
-                نظم مجموعه با دماوند.
-              </h2>
-              <p>
-                اطلاعات اصلی مجموعه و جزئیات اشتراک شما،
-                <br />
-                همه در یک فضای روشن و آرام.
-              </p>
-              <a href="#organization-profile">
-                مشاهده اطلاعات مجموعه
-                <ArrowUpLeft size={17} />
-              </a>
-            </section>
-            <section className="tenant-card tenant-capacity">
-              <div className="tenant-card-icon turquoise">
-                <Users size={24} />
-              </div>
-              <span className="tenant-card-kicker">ظرفیت مجموعه</span>
-              <div
-                className="tenant-capacity-value"
-                data-testid="tenant-capacity"
-              >
-                {org.capacity === null ? "—" : number(org.capacity)}
-                <small>نفر</small>
-              </div>
-              <p>حداکثر ظرفیت ثبت‌شدهٔ {org.name}</p>
-              <div className="capacity-decoration" aria-hidden="true">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <span key={i} />
-                ))}
-              </div>
-              <small className="capacity-footnote">
-                ظرفیت ثبت‌شده، مستقل از تعداد دانش‌آموزان است.
-              </small>
-            </section>
-          </div>
-          <div className="tenant-detail-grid">
-            <section
-              className="tenant-card tenant-subscription"
-              id="subscription"
-            >
-              <div className="tenant-card-heading">
-                <div className="tenant-card-icon purple">
-                  <CalendarDays size={22} />
-                </div>
+          {page !== "dashboard" ? (
+            <OperationsContent
+              key={slug + page + (studentId || "")}
+              slug={slug}
+              page={page}
+              studentId={studentId}
+              summary={session.operations}
+              onChanged={() => setRefresh((n) => n + 1)}
+            />
+          ) : (
+            <>
+              <div className="tenant-heading">
                 <div>
-                  <h2>اشتراک مجموعه</h2>
-                  <p>زمان‌بندی و وضعیت سرویس</p>
+                  <span className="eyebrow">یک چشم‌انداز روشن</span>
+                  <h1>سلام، {org.manager_name}</h1>
+                  <p>به فضای اختصاصی {org.name} خوش آمدید.</p>
                 </div>
                 <Badge status={sub.status} />
               </div>
-              <div className="subscription-visual">
-                <div
-                  className={`subscription-ring ${sub.status}`}
-                  style={
-                    {
-                      "--progress": `${sub.progress_percent}%`,
-                    } as React.CSSProperties
-                  }
-                >
+              <InlineError message={error} />
+              {(sub.status === "expired" ||
+                sub.status === "expiring" ||
+                sub.status === "scheduled") && (
+                <div className={`tenant-notice ${sub.status}`} role="status">
+                  <CalendarDays size={21} />
                   <div>
-                    <strong data-testid="tenant-remaining">
-                      {number(sub.remaining_days)}
+                    <strong>
+                      {sub.status === "expired"
+                        ? "زمان تمدید سرویس رسیده است"
+                        : sub.status === "scheduled"
+                          ? "سرویس شما به‌زودی آغاز می‌شود"
+                          : "تا پایان سرویس، فرصت کمی باقی مانده است"}
                     </strong>
-                    <span>روز باقی‌مانده</span>
+                    <p>
+                      {sub.status === "expired"
+                        ? `${number(sub.days_since_expiration)} روز از پایان سرویس گذشته است. برای تمدید با مدیریت دماوند تماس بگیرید. دسترسی شما به داشبورد برقرار است.`
+                        : sub.status === "scheduled"
+                          ? `شروع سرویس در ${date(sub.start_date)}؛ ${number(sub.days_until_start)} روز دیگر.`
+                          : `${number(sub.remaining_days)} روز از اشتراک باقی مانده است؛ برای تمدید با مدیریت دماوند هماهنگ کنید.`}
+                    </p>
                   </div>
                 </div>
-                <div className="subscription-duration">
-                  <span>مسیر اشتراک شما</span>
-                  <strong>{number(sub.total_days)} روز</strong>
+              )}
+              <div className="tenant-overview-grid">
+                <section className="tenant-welcome">
+                  <div className="tenant-welcome-art" aria-hidden="true">
+                    <Mountain size={145} strokeWidth={0.7} />
+                    <div />
+                  </div>
+                  <span className="tenant-chip">
+                    <Sparkles size={14} />
+                    همراه مسیر شما
+                  </span>
+                  <h2>
+                    تمرکز شما بر رشد،
+                    <br />
+                    نظم مجموعه با دماوند.
+                  </h2>
                   <p>
-                    {sub.status === "scheduled"
-                      ? "در انتظار آغاز سرویس"
-                      : sub.status === "expired"
-                        ? "دورهٔ سرویس به پایان رسیده است"
-                        : `${number(sub.elapsed_days)} روز سپری شده است`}
+                    اطلاعات اصلی مجموعه و جزئیات اشتراک شما،
+                    <br />
+                    همه در یک فضای روشن و آرام.
                   </p>
-                </div>
+                  <a href="#organization-profile">
+                    مشاهده اطلاعات مجموعه
+                    <ArrowUpLeft size={17} />
+                  </a>
+                </section>
+                <section className="tenant-card tenant-capacity">
+                  <div className="tenant-card-icon turquoise">
+                    <Users size={24} />
+                  </div>
+                  <span className="tenant-card-kicker">ظرفیت مجموعه</span>
+                  <div
+                    className="tenant-capacity-value"
+                    data-testid="tenant-capacity"
+                  >
+                    {org.capacity === null ? "—" : number(org.capacity)}
+                    <small>نفر</small>
+                  </div>
+                  <p>حداکثر ظرفیت ثبت‌شدهٔ {org.name}</p>
+                  <div className="capacity-decoration" aria-hidden="true">
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <span key={i} />
+                    ))}
+                  </div>
+                  <small className="capacity-footnote">
+                    سقف دانش‌آموزان فعال در مجموع همهٔ سالن‌ها.
+                  </small>
+                </section>
               </div>
-              <div className="subscription-dates">
-                <div>
-                  <i />
-                  <span>آغاز سرویس</span>
-                  <strong>{date(sub.start_date)}</strong>
-                </div>
-                <div>
-                  <i />
-                  <span>پایان سرویس</span>
-                  <strong>{date(sub.expiration_date)}</strong>
-                </div>
+              {session.operations && (
+                <OperationsOverview slug={slug} stats={session.operations} />
+              )}
+              <div className="tenant-detail-grid">
+                <section
+                  className="tenant-card tenant-subscription"
+                  id="subscription"
+                >
+                  <div className="tenant-card-heading">
+                    <div className="tenant-card-icon purple">
+                      <CalendarDays size={22} />
+                    </div>
+                    <div>
+                      <h2>اشتراک مجموعه</h2>
+                      <p>زمان‌بندی و وضعیت سرویس</p>
+                    </div>
+                    <Badge status={sub.status} />
+                  </div>
+                  <div className="subscription-visual">
+                    <div
+                      className={`subscription-ring ${sub.status}`}
+                      style={
+                        {
+                          "--progress": `${sub.progress_percent}%`,
+                        } as React.CSSProperties
+                      }
+                    >
+                      <div>
+                        <strong data-testid="tenant-remaining">
+                          {number(sub.remaining_days)}
+                        </strong>
+                        <span>روز باقی‌مانده</span>
+                      </div>
+                    </div>
+                    <div className="subscription-duration">
+                      <span>مسیر اشتراک شما</span>
+                      <strong>{number(sub.total_days)} روز</strong>
+                      <p>
+                        {sub.status === "scheduled"
+                          ? "در انتظار آغاز سرویس"
+                          : sub.status === "expired"
+                            ? "دورهٔ سرویس به پایان رسیده است"
+                            : `${number(sub.elapsed_days)} روز سپری شده است`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="subscription-dates">
+                    <div>
+                      <i />
+                      <span>آغاز سرویس</span>
+                      <strong>{date(sub.start_date)}</strong>
+                    </div>
+                    <div>
+                      <i />
+                      <span>پایان سرویس</span>
+                      <strong>{date(sub.expiration_date)}</strong>
+                    </div>
+                  </div>
+                  <div
+                    className="subscription-progress"
+                    role="progressbar"
+                    aria-label="زمان سپری‌شده از اشتراک"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={sub.progress_percent}
+                  >
+                    <span style={{ width: `${sub.progress_percent}%` }} />
+                  </div>
+                  <p className="subscription-end-note">
+                    روز پایان سرویس در محاسبهٔ روزهای باقی‌مانده لحاظ شده است.
+                  </p>
+                </section>
+                <section
+                  className="tenant-card tenant-profile"
+                  id="organization-profile"
+                >
+                  <div className="tenant-card-heading">
+                    <div className="tenant-card-icon blue">
+                      <Fingerprint size={22} />
+                    </div>
+                    <div>
+                      <h2>شناسنامهٔ مجموعه</h2>
+                      <p>اطلاعات ثبت‌شده در مدیریت دماوند</p>
+                    </div>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>نام مجموعه</dt>
+                      <dd>{org.name}</dd>
+                    </div>
+                    <div>
+                      <dt>مدیر مجموعه</dt>
+                      <dd>{org.manager_name}</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <Phone size={14} />
+                        شماره تماس
+                      </dt>
+                      <dd dir="ltr">
+                        {org.phone.replace(/[0-9]/g, (n) => number(Number(n)))}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>شناسهٔ یکتا</dt>
+                      <dd dir="ltr">{org.identifier}</dd>
+                    </div>
+                    <div>
+                      <dt>نشانی اختصاصی</dt>
+                      <dd dir="ltr">/{org.slug}</dd>
+                    </div>
+                  </dl>
+                  <p>
+                    <ShieldCheck size={15} />
+                    برای اصلاح اطلاعات، با مدیریت دماوند هماهنگ کنید.
+                  </p>
+                </section>
               </div>
-              <div
-                className="subscription-progress"
-                role="progressbar"
-                aria-label="زمان سپری‌شده از اشتراک"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={sub.progress_percent}
-              >
-                <span style={{ width: `${sub.progress_percent}%` }} />
-              </div>
-              <p className="subscription-end-note">
-                روز پایان سرویس در محاسبهٔ روزهای باقی‌مانده لحاظ شده است.
-              </p>
-            </section>
-            <section
-              className="tenant-card tenant-profile"
-              id="organization-profile"
-            >
-              <div className="tenant-card-heading">
-                <div className="tenant-card-icon blue">
-                  <Fingerprint size={22} />
-                </div>
-                <div>
-                  <h2>شناسنامهٔ مجموعه</h2>
-                  <p>اطلاعات ثبت‌شده در مدیریت دماوند</p>
-                </div>
-              </div>
-              <dl>
-                <div>
-                  <dt>نام مجموعه</dt>
-                  <dd>{org.name}</dd>
-                </div>
-                <div>
-                  <dt>مدیر مجموعه</dt>
-                  <dd>{org.manager_name}</dd>
-                </div>
-                <div>
-                  <dt>
-                    <Phone size={14} />
-                    شماره تماس
-                  </dt>
-                  <dd dir="ltr">
-                    {org.phone.replace(/[0-9]/g, (n) => number(Number(n)))}
-                  </dd>
-                </div>
-                <div>
-                  <dt>شناسهٔ یکتا</dt>
-                  <dd dir="ltr">{org.identifier}</dd>
-                </div>
-                <div>
-                  <dt>نشانی اختصاصی</dt>
-                  <dd dir="ltr">/{org.slug}</dd>
-                </div>
-              </dl>
-              <p>
-                <ShieldCheck size={15} />
-                برای اصلاح اطلاعات، با مدیریت دماوند هماهنگ کنید.
-              </p>
-            </section>
-          </div>
-          <section className="tenant-future">
-            <div className="tenant-card-icon orange">
-              <Sparkles size={22} />
-            </div>
-            <div>
-              <h2>فضای رشد مجموعهٔ شما</h2>
-              <p>
-                مدیریت دانش‌آموزان و حضور و غیاب در مراحل بعدی اضافه می‌شوند. در
-                این مرحله، اطلاعات واقعی مجموعه و سرویس شما نمایش داده می‌شود.
-              </p>
-            </div>
-            <span>در مسیر توسعه</span>
-          </section>
+            </>
+          )}
           <footer className="tenant-footer">
             <span>دماوند · مدیریت با چشم‌انداز</span>
             <span>

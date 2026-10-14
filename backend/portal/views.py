@@ -49,7 +49,7 @@ def owned_organization(request, slug):
         raise NotAuthenticated("برای ادامه وارد پرتال شوید.")
     if request.user.role != User.Role.TENANT or not request.user.organization_id:
         raise PermissionDenied("این نشست اجازه ورود به پرتال مجموعه را ندارد.")
-    organization = request.user.organization
+    organization = get_object_or_404(Customer, pk=request.user.organization_id)
     if organization.slug != slug or organization.deleted_at is not None or not request.user.is_active:
         raise PermissionDenied("اجازه دسترسی به این مجموعه را ندارید.")
     return organization
@@ -124,10 +124,13 @@ class OrganizationDashboardView(APIView):
 
     def get(self, request, slug):
         organization = owned_organization(request, slug)
+        from operations.services import capacity_summary
+
         return Response(
             {
                 "username": request.user.portal_username,
                 "organization": PortalProfileSerializer(organization).data,
+                "operations": capacity_summary(organization),
             }
         )
 

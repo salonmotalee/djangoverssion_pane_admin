@@ -116,6 +116,10 @@ def main() -> None:
         "tenant-dashboard.png",
         "tenant-mobile.png",
         "tenant-failure.png",
+        "operations-matrix.png",
+        "operations-students.png",
+        "operations-students-mobile.png",
+        "operations-dashboard.png",
     ):
         (ARTIFACTS / name).unlink(missing_ok=True)
     servers: list[subprocess.Popen] = []

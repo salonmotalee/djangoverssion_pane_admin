@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "core",
     "portal",
+    "operations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

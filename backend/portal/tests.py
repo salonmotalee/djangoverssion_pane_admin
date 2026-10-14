@@ -498,4 +498,5 @@ class LegacyMigrationTests(TransactionTestCase):
             self.assertTrue(all(row.capacity is None for row in rows))
             self.assertEqual(migrated.get_model("core", "User").objects.filter(role="tenant").count(), 0)
         finally:
-            MigrationExecutor(connection).migrate([("core", "0003_organization_portal")])
+            executor = MigrationExecutor(connection)
+            executor.migrate(executor.loader.graph.leaf_nodes())

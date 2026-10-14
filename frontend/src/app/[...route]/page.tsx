@@ -9,6 +9,7 @@ import {
   OrganizationDashboard,
   OrganizationLogin,
 } from "@/components/organization-portal";
+import { operationPages, type OperationPage } from "@/lib/operations";
 import type { OrganizationPublic } from "@/lib/types";
 
 async function getOrganization(slug: string): Promise<OrganizationPublic> {
@@ -31,13 +32,24 @@ export default async function AdminPage({
   const { route } = await params;
   if (
     isPortalSlug(route[0]) &&
-    (route.length === 1 || (route.length === 2 && route[1] === "dashboard"))
+    (route.length === 1 ||
+      (route.length === 2 &&
+        (route[1] === "dashboard" ||
+          operationPages.includes(route[1] as OperationPage))) ||
+      (route.length === 3 &&
+        route[1] === "students" &&
+        /^[1-9]\d*$/.test(route[2])))
   ) {
     const organization = await getOrganization(route[0]);
     return route.length === 1 ? (
       <OrganizationLogin organization={organization} />
     ) : (
-      <OrganizationDashboard key={organization.slug} slug={organization.slug} />
+      <OrganizationDashboard
+        key={organization.slug}
+        slug={organization.slug}
+        page={route[1] as "dashboard" | OperationPage}
+        studentId={route[2] ? Number(route[2]) : undefined}
+      />
     );
   }
   let content;
