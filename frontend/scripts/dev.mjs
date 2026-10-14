@@ -96,13 +96,10 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 try {
-  if (!(await apiReady())) {
-    if (!local)
-      throw new Error(
-        "DJANGO_API_ORIGIN is unavailable. Start the configured API first.",
-      );
+  let python;
+  if (local) {
     const executable = windows ? "Scripts/python.exe" : "bin/python";
-    const python = [
+    python = [
       resolve(root, ".venv", executable),
       resolve(backend, ".venv", executable),
     ].find(existsSync);
@@ -110,9 +107,17 @@ try {
       throw new Error(
         "Create .venv and install backend/requirements.txt first (see README).",
       );
+    // A running API can answer CSRF/login while new dashboard tables are missing.
+    // Apply migrations before reusing it as well as before starting a new API.
     await completed(
       run(python, ["manage.py", "migrate", "--noinput"], backend),
     );
+  }
+  if (!(await apiReady())) {
+    if (!local)
+      throw new Error(
+        "DJANGO_API_ORIGIN is unavailable. Start the configured API first.",
+      );
     const api = run(
       python,
       ["manage.py", "runserver", "127.0.0.1:8000"],
