@@ -60,7 +60,9 @@ def run_appearance_workflows(page, context, artifacts, password):
         )
         assert (
             assert_api(
-                device.request.get(BASE_URL + "/api/organizations/darya/appearance/")
+                device.request.get(
+                    BASE_URL + "/api/organizations/darya/appearance/", max_retries=2
+                )
             )["mode"]
             == "light"
         )

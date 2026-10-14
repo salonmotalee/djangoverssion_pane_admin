@@ -121,6 +121,10 @@ def run_workflows(browser, username: str, password: str, artifacts: Path) -> int
 
         checks += run_phase4_workflows(page, context, artifacts)
 
+        from phase5_workflows import run_phase5_workflows
+
+        checks += run_phase5_workflows(browser, context, artifacts)
+
         assert not errors, "Browser runtime errors: " + "; ".join(errors)
         return checks
     except Exception:

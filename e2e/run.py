@@ -84,9 +84,15 @@ def stop(process: subprocess.Popen) -> None:
             process.wait()
 
 
-def exercise(browser, username: str, password: str) -> int:
+def exercise(
+    browser, username: str, password: str, *, phase5_only: bool = False
+) -> int:
     """UI workflow; selectors are based on accessible Persian labels."""
     # Completed alongside the UI so the checks use the same actual labels.
+    if phase5_only:
+        from phase5_workflows import run_phase5_only
+
+        return run_phase5_only(browser, username, password, ARTIFACTS)
     from workflows import run_workflows
 
     return run_workflows(browser, username, password, ARTIFACTS)
@@ -98,6 +104,11 @@ def main() -> None:
         "--dev",
         action="store_true",
         help="Exercise the combined npm development launcher",
+    )
+    parser.add_argument(
+        "--phase5",
+        action="store_true",
+        help="Run Phase 5 workflows only for focused diagnosis",
     )
     args = parser.parse_args()
     if not PYTHON.is_file() or not NPM:
@@ -128,6 +139,13 @@ def main() -> None:
         "phase4-supervisor.png",
         "phase4-support.png",
         "phase4-mobile.png",
+        "phase5-schedule.png",
+        "phase5-supervisor-dashboard.png",
+        "phase5-presence.png",
+        "phase5-attendance.png",
+        "phase5-manager-attendance.png",
+        "phase5-mobile.png",
+        "phase5-failure.png",
     ):
         (ARTIFACTS / name).unlink(missing_ok=True)
     servers: list[subprocess.Popen] = []
@@ -227,7 +245,12 @@ def main() -> None:
                     **({"executable_path": executable} if executable else {}),
                 )
                 try:
-                    checks = exercise(browser, env["E2E_USERNAME"], env["E2E_PASSWORD"])
+                    checks = exercise(
+                        browser,
+                        env["E2E_USERNAME"],
+                        env["E2E_PASSWORD"],
+                        phase5_only=args.phase5,
+                    )
                     print(
                         f"E2E: {checks} workflows passed against Django + Next.js (isolated database)"
                     )
@@ -236,6 +259,7 @@ def main() -> None:
                             {
                                 "status": "passed",
                                 "mode": "development" if args.dev else "production",
+                                "target": "phase5" if args.phase5 else "all",
                                 "workflows": checks,
                                 "completed_at": datetime.now(UTC).isoformat(),
                             },
