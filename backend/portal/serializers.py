@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from core.models import Customer
 
+from .appearance import default_appearance
 from .services import subscription
 
 
@@ -34,10 +35,61 @@ class PortalCredentialsSerializer(serializers.Serializer):
 
 class PortalProfileSerializer(serializers.ModelSerializer):
     subscription = serializers.SerializerMethodField()
+    appearance = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
-        fields = ["name", "manager_name", "phone", "identifier", "slug", "capacity", "subscription"]
+        fields = [
+            "name",
+            "manager_name",
+            "phone",
+            "identifier",
+            "slug",
+            "capacity",
+            "subscription",
+            "appearance",
+        ]
 
     def get_subscription(self, customer):
         return subscription(customer)
+
+    def get_appearance(self, customer):
+        return customer.appearance or default_appearance()
+
+
+class StrictAppearanceSerializer(serializers.Serializer):
+    def to_internal_value(self, data):
+        if isinstance(data, dict) and set(data) - set(self.fields):
+            raise serializers.ValidationError(
+                {"non_field_errors": ["فقط تنظیمات ظاهر مشخص‌شده قابل تغییر هستند."]}
+            )
+        return super().to_internal_value(data)
+
+
+class AppearancePaletteSerializer(StrictAppearanceSerializer):
+    primary = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+    background = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+    surface = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+    sidebar = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+    success = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+    warning = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+    danger = serializers.RegexField(r"^#[0-9a-fA-F]{6}$", max_length=7)
+
+    def validate(self, attrs):
+        return {key: value.lower() for key, value in attrs.items()}
+
+
+class AppearancePalettesSerializer(StrictAppearanceSerializer):
+    light = AppearancePaletteSerializer()
+    dark = AppearancePaletteSerializer()
+
+
+class AppearanceSerializer(StrictAppearanceSerializer):
+    version = serializers.ChoiceField(choices=[1])
+    mode = serializers.ChoiceField(choices=["light", "dark", "system"])
+    palettes = AppearancePalettesSerializer()
+
+    def validate_version(self, value):
+        if isinstance(self.initial_data.get("version"), bool):
+            raise serializers.ValidationError("نسخهٔ تنظیمات معتبر نیست.")
+        return value

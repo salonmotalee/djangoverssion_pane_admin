@@ -14,12 +14,14 @@ from core.services import (
     failed_login,
     login_is_limited,
     record_audit,
+    snapshot,
     successful_login,
     throttle_keys,
     throttle_records,
 )
 
-from .serializers import PortalProfileSerializer
+from .appearance import default_appearance
+from .serializers import AppearanceSerializer, PortalProfileSerializer
 
 
 class IsOrganizationUser(BasePermission):
@@ -143,3 +145,32 @@ class OrganizationLogoutView(APIView):
         record_audit(request.user, "portal_logout", organization, f"خروج از پرتال {organization.name}")
         logout(request)
         return Response(status=204)
+
+
+class OrganizationAppearanceView(APIView):
+    permission_classes = [IsOrganizationUser]
+
+    def get(self, request, slug):
+        organization = owned_organization(request, slug)
+        return Response(organization.appearance or default_appearance())
+
+    def put(self, request, slug):
+        organization = owned_organization(request, slug)
+        serializer = AppearanceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            locked = Customer.objects.select_for_update().get(pk=organization.pk)
+            if locked.deleted_at is not None:
+                raise PermissionDenied("اجازه دسترسی به این مجموعه را ندارید.")
+            before = snapshot(locked, ["appearance"])
+            locked.appearance = serializer.validated_data
+            locked.save(update_fields=["appearance", "updated_at"])
+            record_audit(
+                request.user,
+                "update_appearance",
+                locked,
+                f"تغییر تنظیمات ظاهر پرتال {locked.name}",
+                before=before,
+                fields=["appearance"],
+            )
+        return Response(locked.appearance)

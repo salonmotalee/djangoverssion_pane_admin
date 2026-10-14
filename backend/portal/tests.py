@@ -18,6 +18,7 @@ from rest_framework.test import APIClient
 from core.models import AuditLog, Customer, User
 from core.routing import RESERVED_SLUGS
 
+from .appearance import default_appearance
 from .services import provision_portal, subscription
 
 PASSWORD = "TestingOnly$Mountain2026!"
@@ -77,6 +78,90 @@ class PortalTests(TestCase):
         response = self.client.get("/api/organizations/aftab/public/")
         self.assertEqual(response.data, {"name": "آفتاب", "slug": "aftab"})
         self.assertEqual(self.client.get("/api/organizations/missing/public/").status_code, 404)
+
+    def test_appearance_is_shared_between_sessions_and_isolated_by_organization(self):
+        self.login()
+        endpoint = "/api/organizations/aftab/appearance/"
+        self.assertEqual(self.client.get(endpoint).data, default_appearance())
+        appearance = default_appearance()
+        appearance["mode"] = "dark"
+        appearance["palettes"]["dark"]["primary"] = "#ABCDEF"
+        response = self.client.put(endpoint, appearance, format="json", HTTP_X_CSRFTOKEN=self.csrf())
+        self.assertEqual(response.status_code, 200, response.data)
+        appearance["palettes"]["dark"]["primary"] = "#abcdef"
+        self.assertEqual(response.data, appearance)
+        second_device = APIClient(enforce_csrf_checks=True)
+        self.assertEqual(self.login(client=second_device).status_code, 200)
+        dashboard = second_device.get("/api/organizations/aftab/dashboard/")
+        self.assertEqual(dashboard.data["organization"]["appearance"], appearance)
+        self.assertEqual(second_device.get(endpoint).data, appearance)
+        self.assertEqual(self.client.get("/api/organizations/darya/appearance/").status_code, 403)
+        self.assertEqual(
+            self.client.put(
+                "/api/organizations/darya/appearance/",
+                appearance,
+                format="json",
+                HTTP_X_CSRFTOKEN=self.csrf(),
+            ).status_code,
+            403,
+        )
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.appearance, {})
+        audit = AuditLog.objects.get(action="update_appearance")
+        self.assertEqual(audit.entity_id, str(self.a.pk))
+        self.assertEqual(audit.changes["appearance"]["after"], appearance)
+
+    def test_appearance_rejects_missing_invalid_or_extra_fields_without_changing_data(self):
+        self.login()
+        endpoint = "/api/organizations/aftab/appearance/"
+        for changes in (
+            {"mode": "invalid"},
+            {"version": 2},
+            {"version": True},
+            {"organization_id": self.b.pk},
+            {"palettes": {}},
+            {"palettes": {"light": {"primary": "red"}}},
+        ):
+            appearance = default_appearance()
+            appearance.update(changes)
+            with self.subTest(changes=changes):
+                response = self.client.put(endpoint, appearance, format="json", HTTP_X_CSRFTOKEN=self.csrf())
+                self.assertEqual(response.status_code, 400, response.data)
+        for color in ("red", "#123", "url(https://example.com)", "#123456;", None, 123456):
+            appearance = default_appearance()
+            appearance["palettes"]["light"]["primary"] = color
+            with self.subTest(color=color):
+                self.assertEqual(
+                    self.client.put(
+                        endpoint, appearance, format="json", HTTP_X_CSRFTOKEN=self.csrf()
+                    ).status_code,
+                    400,
+                )
+        appearance = default_appearance()
+        appearance["palettes"]["dark"]["css"] = "background: red"
+        self.assertEqual(
+            self.client.put(endpoint, appearance, format="json", HTTP_X_CSRFTOKEN=self.csrf()).status_code,
+            400,
+        )
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.appearance, {})
+        self.assertFalse(AuditLog.objects.filter(action="update_appearance").exists())
+
+    def test_appearance_requires_portal_session_csrf_and_active_organization(self):
+        endpoint = "/api/organizations/aftab/appearance/"
+        self.assertIn(self.client.get(endpoint).status_code, (401, 403))
+        self.assertEqual(self.central.put(endpoint, default_appearance(), format="json").status_code, 403)
+        self.login()
+        self.assertEqual(self.client.put(endpoint, default_appearance(), format="json").status_code, 403)
+        self.a.deleted_at = timezone.now()
+        self.a.save()
+        self.assertIn(self.client.get(endpoint).status_code, (401, 403))
+        self.assertIn(
+            self.client.put(
+                endpoint, default_appearance(), format="json", HTTP_X_CSRFTOKEN=self.csrf()
+            ).status_code,
+            (401, 403),
+        )
 
     def test_provisioning_hashes_password_and_scopes_same_username(self):
         self.assertTrue(self.owner.check_password(PASSWORD))

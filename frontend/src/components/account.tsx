@@ -250,6 +250,7 @@ const auditActionNames: Record<string, string> = {
   configure_portal: "تنظیم ورود پرتال",
   portal_login: "ورود مجموعه",
   portal_logout: "خروج مجموعه",
+  update_appearance: "تغییر ظاهر پرتال",
   create_customer: "ایجاد مجموعه",
   update_customer: "ویرایش مجموعه",
   delete_customer: "حذف مجموعه",

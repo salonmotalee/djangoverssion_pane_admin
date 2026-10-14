@@ -89,6 +89,10 @@ def run_tenant_workflows(page, context, artifacts):
         assert_api(context.request.get(BASE_URL + "/api/auth/me/"))
         checks += 1
 
+        from appearance_workflows import run_appearance_workflows
+
+        checks += run_appearance_workflows(portal, context, artifacts, password)
+
         from operations_workflows import run_operations_workflows
 
         checks += run_operations_workflows(portal, context, org, artifacts)

@@ -39,6 +39,7 @@ export default async function AdminPage({
         (route[1] === "dashboard" ||
           route[1] === "supervisors" ||
           route[1] === "support" ||
+          route[1] === "appearance" ||
           operationPages.some((page) => page === route[1]))) ||
       (route.length === 3 &&
         ["students", "supervisors", "support"].includes(route[1]) &&
