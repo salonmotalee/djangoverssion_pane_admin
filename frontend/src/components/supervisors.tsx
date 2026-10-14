@@ -30,6 +30,7 @@ import {
 import type { Paginated } from "@/lib/types";
 import { useData } from "@/lib/use-data";
 import { HelpTooltip } from "./help-tooltip";
+import { SupervisorAccessPanel } from "./supervisor-access";
 import {
   Empty,
   ErrorState,
@@ -876,6 +877,9 @@ function SupervisorDetail({ slug, id }: { slug: string; id: number }) {
             />
           )}
         </Panel>
+      </div>
+      <div id="supervisor-account">
+        <SupervisorAccessPanel slug={slug} supervisor={supervisor} />
       </div>
       {edit && !supervisor.archived_at && (
         <SupervisorForm

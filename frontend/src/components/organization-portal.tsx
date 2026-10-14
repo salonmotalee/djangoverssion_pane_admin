@@ -9,6 +9,8 @@ import {
   Grid2x2,
   GraduationCap,
   CalendarDays,
+  CalendarClock,
+  ClipboardCheck,
   Check,
   ChevronLeft,
   Eye,
@@ -46,6 +48,8 @@ import { HelpTooltip } from "./help-tooltip";
 import { Supervisors } from "./supervisors";
 import { SupportBell, SupportTickets } from "./support";
 import { AppearanceSettings, useThemeMode } from "./appearance";
+import { Scheduling } from "./scheduling";
+import { ManagerAttendance } from "./manager-attendance";
 import {
   normalizeAppearance,
   themeVariables,
@@ -59,6 +63,8 @@ export type PortalPage =
   | OperationPage
   | "supervisors"
   | "appearance"
+  | "schedule"
+  | "attendance"
   | "support";
 
 export function OrganizationLogin({
@@ -406,7 +412,11 @@ export function OrganizationDashboard({
           ? "پشتیبانی و تیکت‌ها"
           : page === "appearance"
             ? "تنظیمات ظاهر"
-            : operationTitles[page];
+            : page === "schedule"
+              ? "برنامه‌ریزی شیفت‌ها"
+              : page === "attendance"
+                ? "نظارت بر حضور و غیاب"
+                : operationTitles[page];
   const icons = {
     halls: Building2,
     "study-sessions": Clock3,
@@ -501,6 +511,26 @@ export function OrganizationDashboard({
               <ChevronLeft size={15} />
             </Link>
             <Link
+              href={`/${slug}/schedule`}
+              className={page === "schedule" ? "selected" : ""}
+              aria-current={page === "schedule" ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              <CalendarClock size={19} />
+              برنامه‌ریزی شیفت‌ها
+              <ChevronLeft size={15} />
+            </Link>
+            <Link
+              href={`/${slug}/attendance`}
+              className={page === "attendance" ? "selected" : ""}
+              aria-current={page === "attendance" ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              <ClipboardCheck size={19} />
+              نظارت بر حضور و غیاب
+              <ChevronLeft size={15} />
+            </Link>
+            <Link
               href={`/${slug}/appearance`}
               className={page === "appearance" ? "selected" : ""}
               aria-current={page === "appearance" ? "page" : undefined}
@@ -576,7 +606,11 @@ export function OrganizationDashboard({
           </div>
         </header>
         <main className="tenant-main" id="overview">
-          {page === "appearance" ? (
+          {page === "schedule" ? (
+            <Scheduling slug={slug} />
+          ) : page === "attendance" ? (
+            <ManagerAttendance slug={slug} />
+          ) : page === "appearance" ? (
             <AppearanceSettings
               appearance={appearance}
               mode={themeMode}

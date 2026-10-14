@@ -13,6 +13,11 @@ import {
 import { operationPages } from "@/lib/operations";
 import { SupportTickets } from "@/components/support";
 import type { OrganizationPublic } from "@/lib/types";
+import {
+  SupervisorLogin,
+  SupervisorPortal,
+  type SupervisorPage,
+} from "@/components/supervisor-portal";
 
 async function getOrganization(slug: string): Promise<OrganizationPublic> {
   const origin = (
@@ -34,12 +39,40 @@ export default async function AdminPage({
   const { route } = await params;
   if (
     isPortalSlug(route[0]) &&
+    route[1] === "supervisor" &&
+    route.length === 3
+  ) {
+    const pages = [
+      "dashboard",
+      "halls",
+      "students",
+      "presence",
+      "attendance",
+      "schedule",
+      "profile",
+    ];
+    if (route[2] !== "login" && !pages.includes(route[2])) notFound();
+    const organization = await getOrganization(route[0]);
+    return route[2] === "login" ? (
+      <SupervisorLogin organization={organization} />
+    ) : (
+      <SupervisorPortal
+        key={organization.slug}
+        slug={organization.slug}
+        page={route[2] as SupervisorPage}
+      />
+    );
+  }
+  if (
+    isPortalSlug(route[0]) &&
     (route.length === 1 ||
       (route.length === 2 &&
         (route[1] === "dashboard" ||
           route[1] === "supervisors" ||
           route[1] === "support" ||
           route[1] === "appearance" ||
+          route[1] === "schedule" ||
+          route[1] === "attendance" ||
           operationPages.some((page) => page === route[1]))) ||
       (route.length === 3 &&
         ["students", "supervisors", "support"].includes(route[1]) &&
