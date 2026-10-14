@@ -9,6 +9,9 @@ from .views import (
 )
 
 urlpatterns = [
+    path("<slug:slug>/", include("staff.urls")),
+    path("<slug:slug>/", include("scheduling.urls")),
+    path("<slug:slug>/", include("attendance.urls")),
     path("<slug:slug>/public/", PublicOrganizationView.as_view()),
     path("<slug:slug>/login/", OrganizationLoginView.as_view()),
     path("<slug:slug>/dashboard/", OrganizationDashboardView.as_view()),

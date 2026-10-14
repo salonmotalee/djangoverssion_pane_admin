@@ -7,3 +7,5 @@ tzdata==2026.2
 asgiref==3.12.1
 sqlparse==0.6.0
 typing_extensions==4.16.0
+jdatetime==6.1.1
+jalali-core==1.0.0

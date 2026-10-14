@@ -1,9 +1,10 @@
-"""Separate central and organization cookies using Django's SessionStore.
+"""Separate central, organization and supervisor cookies using SessionStore.
 
 No global settings are mutated. Each request selects its own session namespace.
 The portal response follows Django 5.2 SessionMiddleware's expiry/save semantics.
 """
 
+import re
 import time
 
 from django.conf import settings
@@ -16,6 +17,7 @@ from django.utils.http import http_date
 
 class RealmSessionMiddleware(SessionMiddleware):
     def process_request(self, request):
+        request.is_supervisor_request = bool(re.match(r"^/api/organizations/[^/]+/supervisor/", request.path))
         request.is_portal_request = request.path.startswith(settings.PORTAL_SESSION_COOKIE_PATH)
         if not request.is_portal_request:
             super().process_request(request)
@@ -23,7 +25,12 @@ class RealmSessionMiddleware(SessionMiddleware):
             if request.session.get("_auth_user_backend") == "django.contrib.auth.backends.ModelBackend":
                 request.session["_auth_user_backend"] = "core.authentication.InternalBackend"
             return
-        request.session = self.SessionStore(request.COOKIES.get(settings.PORTAL_SESSION_COOKIE_NAME))
+        name = (
+            settings.SUPERVISOR_SESSION_COOKIE_NAME
+            if request.is_supervisor_request
+            else settings.PORTAL_SESSION_COOKIE_NAME
+        )
+        request.session = self.SessionStore(request.COOKIES.get(name))
 
     def process_response(self, request, response):
         if not request.is_portal_request:
@@ -32,7 +39,11 @@ class RealmSessionMiddleware(SessionMiddleware):
         session = getattr(request, "session", None)
         if session is None:
             return response
-        name, path = settings.PORTAL_SESSION_COOKIE_NAME, settings.PORTAL_SESSION_COOKIE_PATH
+        name, path = (
+            (settings.SUPERVISOR_SESSION_COOKIE_NAME, settings.SUPERVISOR_SESSION_COOKIE_PATH)
+            if request.is_supervisor_request
+            else (settings.PORTAL_SESSION_COOKIE_NAME, settings.PORTAL_SESSION_COOKIE_PATH)
+        )
         if name in request.COOKIES and session.is_empty():
             response.delete_cookie(
                 name,
