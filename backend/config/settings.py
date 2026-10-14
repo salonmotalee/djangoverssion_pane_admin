@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "core",
     "portal",
     "operations",
+    "support",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

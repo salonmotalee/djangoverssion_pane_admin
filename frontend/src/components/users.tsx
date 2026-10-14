@@ -16,6 +16,7 @@ import { date, displayName, number, roles, queryString } from "@/lib/format";
 import { useData } from "@/lib/use-data";
 import type { Paginated, Role, User } from "@/lib/types";
 import { useAuth, useToast } from "./providers";
+import { HelpTooltip } from "./help-tooltip";
 import {
   Empty,
   ErrorState,
@@ -63,6 +64,9 @@ function UserForm({
             is_active: form.get("is_active") === "on",
           };
           if (!target) body.password = form.get("password");
+          if (user?.role === "super_admin")
+            body.can_support =
+              role !== "super_admin" && form.get("can_support") === "on";
           setPending(true);
           setError(null);
           try {
@@ -172,6 +176,20 @@ function UserForm({
           />
           <span>حساب کاربر فعال باشد</span>
         </label>
+        {user?.role === "super_admin" && role !== "super_admin" && (
+          <div className="checkbox-field">
+            <label className="checkbox-field">
+              <input
+                name="can_support"
+                type="checkbox"
+                defaultChecked={target?.can_support ?? false}
+                disabled={pending}
+              />
+              <span>دسترسی به مدیریت تیکت‌های پشتیبانی</span>
+            </label>
+            <HelpTooltip content="این مجوز امکان مشاهده، پاسخ و تخصیص تیکت‌های همهٔ مجموعه‌ها را می‌دهد. فقط مدیر کل می‌تواند آن را تغییر دهد." />
+          </div>
+        )}
         <InlineError message={error} />
         <div className="modal-footer">
           <button

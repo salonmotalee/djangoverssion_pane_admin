@@ -7,6 +7,7 @@ export type User = {
   email: string;
   role: Role;
   is_active: boolean;
+  can_support: boolean;
   date_joined: string;
   last_login: string | null;
 };

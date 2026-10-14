@@ -109,6 +109,16 @@ const fieldNames: Record<string, string> = {
   end_time: "ساعت پایان",
   is_active: "وضعیت",
   assignments: "تخصیص پارت‌ها",
+  halls: "سالن‌ها",
+  subject: "موضوع",
+  category: "دسته‌بندی",
+  priority: "اولویت",
+  description: "شرح درخواست",
+  body: "متن پیام",
+  assigned_to: "مسئول پیگیری",
+  date_from: "از تاریخ",
+  date_to: "تا تاریخ",
+  can_support: "دسترسی پشتیبانی",
 };
 export const mutate = <T>(path: string, method: string, body?: unknown) =>
   api<T>(path, {

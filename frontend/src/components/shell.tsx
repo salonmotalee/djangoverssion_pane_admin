@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronDown,
-  CircleHelp,
+  MessagesSquare,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -19,11 +19,18 @@ import {
 import { useAuth, useToast } from "./providers";
 import { ErrorState, Logo, Spinner } from "./ui";
 import { date, displayName, roles } from "@/lib/format";
+import { SupportBell } from "./support";
 
 const nav = [
   { href: "/dashboard", title: "نمای کلی", Icon: LayoutDashboard },
   { href: "/customers", title: "مجموعه‌ها", Icon: Users },
   { href: "/alerts", title: "هشدارهای سرویس", Icon: Bell },
+  {
+    href: "/support",
+    title: "مدیریت تیکت‌ها",
+    Icon: MessagesSquare,
+    support: true,
+  },
   { href: "/users", title: "کاربران و دسترسی", Icon: ShieldCheck, admin: true },
   { href: "/activity", title: "تاریخچه فعالیت‌ها", Icon: History, admin: true },
 ];
@@ -105,6 +112,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     );
   if (!user) return null;
   const canManage = user.role !== "operator";
+  const canSupport = user.role === "super_admin" || user.can_support;
   const current =
     nav.find((item) => path.startsWith(item.href))?.title || "پروفایل من";
   return (
@@ -153,7 +161,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="nav-label">فضای کار</div>
         <nav>
           {nav
-            .filter((item) => !item.admin || canManage)
+            .filter(
+              (item) =>
+                (!item.admin || canManage) && (!item.support || canSupport),
+            )
             .map(({ href, title, Icon }) => (
               <Link
                 key={href}
@@ -168,16 +179,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
         </nav>
-        <div className="sidebar-note">
-          <div>
-            <CircleHelp size={19} />
-            <span>مدیریت، با خیال آسوده</span>
-          </div>
-          <p>
-            انقضای سرویس تنها یک یادآوری است و دسترسی مجموعه را محدود نمی‌کند.
-          </p>
-          <span className="note-line" />
-        </div>
         <div className="sidebar-bottom">
           <Link
             href="/profile"
@@ -205,9 +206,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <LogOut size={20} />
             <span>{leaving ? "در حال خروج…" : "خروج از حساب"}</span>
           </button>
-          <div className="sidebar-version">
-            مدار <span>نسخه ۱.۰</span>
-          </div>
         </div>
       </aside>
       <div className="workspace" ref={workspaceRef}>
@@ -226,6 +224,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <strong>{current}</strong>
           </div>
           <div className="topbar-end">
+            {canSupport && <SupportBell />}
             <span className="today">
               <span className="green-dot" />
               {date(new Date().toISOString())}

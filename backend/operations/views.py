@@ -8,16 +8,17 @@ from rest_framework.views import APIView
 
 from portal.views import IsOrganizationUser, owned_organization
 
-from .models import Hall, HallSession, Student, StudySession
+from .models import Hall, HallSession, Student, StudySession, Supervisor
 from .serializers import (
     AssignmentSerializer,
     BulkStudentSerializer,
     HallSerializer,
     StudentSerializer,
     StudySessionSerializer,
+    SupervisorSerializer,
     digits,
 )
-from .services import lock_organization
+from .services import change_supervisor_status, lock_organization
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
@@ -181,6 +182,77 @@ class StudentViewSet(OrganizationViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response({"updated": len(students)})
+
+
+class SupervisorViewSet(OrganizationViewSet):
+    model = Supervisor
+    serializer_class = SupervisorSerializer
+    ordering_fields = {"first_name", "last_name", "created_at", "updated_at"}
+
+    def get_queryset(self):
+        queryset = Supervisor.objects.filter(organization=self.organization).prefetch_related("halls")
+        if self.action != "list":
+            return queryset
+        params = self.request.query_params
+        selected_status = params.get("status", "active")
+        if selected_status not in {"active", "inactive", "archived", "all"}:
+            raise ValidationError({"status": "وضعیت انتخاب‌شده معتبر نیست."})
+        if selected_status == "archived":
+            queryset = queryset.filter(archived_at__isnull=False)
+        elif selected_status != "all":
+            queryset = queryset.filter(archived_at__isnull=True, is_active=selected_status == "active")
+        search = digits(params.get("search", "").strip())
+        if search:
+            query = (
+                Q(first_name__icontains=search) | Q(last_name__icontains=search) | Q(phone__icontains=search)
+            )
+            if len(search.split()) > 1:
+                query |= Q(
+                    first_name__icontains=search.split()[0], last_name__icontains=" ".join(search.split()[1:])
+                )
+            queryset = queryset.filter(query)
+        hall = params.get("hall")
+        if hall:
+            try:
+                hall = int(digits(hall))
+            except ValueError as exc:
+                raise ValidationError({"hall": "مقدار فیلتر معتبر نیست."}) from exc
+            if not Hall.objects.filter(pk=hall, organization=self.organization).exists():
+                raise ValidationError({"hall": "سالن انتخابی معتبر نیست."})
+            queryset = queryset.filter(halls__pk=hall)
+        ordering = params.get("ordering", "last_name")
+        if ordering.removeprefix("-") not in self.ordering_fields:
+            raise ValidationError({"ordering": "مرتب‌سازی انتخاب‌شده معتبر نیست."})
+        return queryset.order_by(ordering, "first_name", "pk").distinct()
+
+    def change_status(self, request, slug, action):
+        self._organization = lock_organization(request, slug)
+        supervisor = change_supervisor_status(self.get_object(), action)
+        return Response(self.get_serializer(supervisor).data)
+
+    @transaction.atomic
+    def destroy(self, request, slug, pk=None):
+        return self.change_status(request, slug, "archive")
+
+    @action(detail=True, methods=["post"])
+    @transaction.atomic
+    def archive(self, request, slug, pk=None):
+        return self.change_status(request, slug, "archive")
+
+    @action(detail=True, methods=["post"])
+    @transaction.atomic
+    def restore(self, request, slug, pk=None):
+        return self.change_status(request, slug, "restore")
+
+    @action(detail=True, methods=["post"])
+    @transaction.atomic
+    def activate(self, request, slug, pk=None):
+        return self.change_status(request, slug, "activate")
+
+    @action(detail=True, methods=["post"])
+    @transaction.atomic
+    def deactivate(self, request, slug, pk=None):
+        return self.change_status(request, slug, "deactivate")
 
 
 class AssignmentsView(APIView):

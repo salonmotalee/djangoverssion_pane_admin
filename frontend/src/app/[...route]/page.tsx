@@ -8,8 +8,10 @@ import { isPortalSlug } from "@/lib/routing";
 import {
   OrganizationDashboard,
   OrganizationLogin,
+  type PortalPage,
 } from "@/components/organization-portal";
-import { operationPages, type OperationPage } from "@/lib/operations";
+import { operationPages } from "@/lib/operations";
+import { SupportTickets } from "@/components/support";
 import type { OrganizationPublic } from "@/lib/types";
 
 async function getOrganization(slug: string): Promise<OrganizationPublic> {
@@ -35,9 +37,11 @@ export default async function AdminPage({
     (route.length === 1 ||
       (route.length === 2 &&
         (route[1] === "dashboard" ||
-          operationPages.includes(route[1] as OperationPage))) ||
+          route[1] === "supervisors" ||
+          route[1] === "support" ||
+          operationPages.some((page) => page === route[1]))) ||
       (route.length === 3 &&
-        route[1] === "students" &&
+        ["students", "supervisors", "support"].includes(route[1]) &&
         /^[1-9]\d*$/.test(route[2])))
   ) {
     const organization = await getOrganization(route[0]);
@@ -47,8 +51,16 @@ export default async function AdminPage({
       <OrganizationDashboard
         key={organization.slug}
         slug={organization.slug}
-        page={route[1] as "dashboard" | OperationPage}
-        studentId={route[2] ? Number(route[2]) : undefined}
+        page={route[1] as PortalPage}
+        studentId={
+          route[1] === "students" && route[2] ? Number(route[2]) : undefined
+        }
+        supervisorId={
+          route[1] === "supervisors" && route[2] ? Number(route[2]) : undefined
+        }
+        ticketId={
+          route[1] === "support" && route[2] ? Number(route[2]) : undefined
+        }
       />
     );
   }
@@ -57,6 +69,9 @@ export default async function AdminPage({
     switch (route[0]) {
       case "dashboard":
         content = <Dashboard />;
+        break;
+      case "support":
+        content = <SupportTickets />;
         break;
       case "customers":
         content = <Customers />;
@@ -77,6 +92,12 @@ export default async function AdminPage({
         notFound();
     }
   } else if (
+    route.length === 2 &&
+    route[0] === "support" &&
+    /^[1-9]\d*$/.test(route[1])
+  )
+    content = <SupportTickets ticketId={Number(route[1])} />;
+  else if (
     route.length === 2 &&
     route[0] === "customers" &&
     /^\d+$/.test(route[1])

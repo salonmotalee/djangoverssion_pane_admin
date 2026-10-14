@@ -325,13 +325,14 @@ export function Modal({
     const previous = document.activeElement as HTMLElement;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const timer = window.setTimeout(
-      () =>
-        root.current
-          ?.querySelector<HTMLElement>("input,button,select,textarea")
-          ?.focus(),
-      20,
-    );
+    const timer = window.setTimeout(() => {
+      const dialog = root.current;
+      // Preserve focus chosen by the user or by a child while the dialog opens.
+      if (!dialog || dialog.contains(document.activeElement)) return;
+      dialog
+        .querySelector<HTMLElement>("input,button,select,textarea")
+        ?.focus();
+    }, 20);
     const listener = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
       if (event.key !== "Tab") return;
