@@ -399,6 +399,11 @@ def run_phase5_workflows(browser, central_context, artifacts):
         checks += 1
 
         staff_page.set_viewport_size({"width": 390, "height": 844})
+        # Chromium updates the viewport before responsive media-query layout paints.
+        staff_page.evaluate(
+            "() => new Promise(resolve => "
+            "requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+        )
         assert staff_page.evaluate(
             "document.documentElement.scrollWidth <= innerWidth"
         ), "Staff mobile overflow"

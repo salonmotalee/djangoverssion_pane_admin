@@ -651,6 +651,9 @@
   font-size: 10px;
   color: var(--staff-muted, #6d7389);
 }
+.staff-recent-events {
+  padding-inline: 24px;
+}
 .staff-recent-events > div {
   display: flex;
   gap: 12px;
@@ -666,6 +669,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
   border-radius: 10px;
   background: var(--staff-soft);
   color: var(--staff-primary);
@@ -676,13 +680,17 @@
 .staff-recent-events > div > div {
   display: grid;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 .staff-recent-events strong {
   font-size: 11px;
+  overflow-wrap: anywhere;
 }
 .staff-recent-events small {
   font-size: 10px;
   color: var(--staff-muted);
+  overflow-wrap: anywhere;
 }
 .staff-recent-events > div > span:last-child {
   margin-right: auto;
@@ -690,6 +698,7 @@
   text-align: left;
   gap: 4px;
   font-size: 10px;
+  flex-shrink: 0;
 }
 .staff-attendance-filters {
   display: grid;
@@ -1488,8 +1497,24 @@ button.staff-status-badge {
   .staff-skeleton > section {
     grid-template-columns: repeat(2, 1fr);
   }
-  .staff-recent-events > div > span:last-child small {
-    max-width: 100px;
+  .staff-recent-events {
+    padding-inline: 16px;
+  }
+  .staff-recent-events > div {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 6px 12px;
+  }
+  .staff-recent-events .staff-event-icon {
+    grid-row: 1 / 3;
+  }
+  .staff-recent-events > div > span:last-child {
+    grid-column: 2;
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: 0;
+    text-align: right;
+    gap: 8px;
     line-height: 1.7;
   }
 }
