@@ -73,6 +73,7 @@ export type OperationsSummary = {
   over_capacity: boolean;
   active_halls: number;
   active_sessions: number;
+  active_supervisors: number;
   students_per_hall: { id: number; name: string; active_students: number }[];
 };
 const seconds = (value: string) => {

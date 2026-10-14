@@ -34,6 +34,7 @@ class User(AbstractUser):
     portal_username = models.CharField(max_length=64, blank=True, default="")
     is_portal_owner = models.BooleanField(default=False)
     portal_session_version = models.PositiveIntegerField(default=0)
+    can_support = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

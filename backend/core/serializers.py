@@ -1,7 +1,9 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from .models import AuditLog, Customer, User, generate_identifier
 
@@ -30,6 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "role",
             "is_active",
+            "can_support",
             "date_joined",
             "last_login",
             "password",
@@ -57,6 +60,18 @@ class UserSerializer(serializers.ModelSerializer):
                 {"password": "برای تغییر رمز از عملیات بازنشانی رمز استفاده کنید."}
             )
         request = self.context.get("request")
+        if "can_support" in attrs and (
+            not request
+            or not User.objects.filter(
+                pk=request.user.pk,
+                role=User.Role.SUPER_ADMIN,
+                is_active=True,
+                organization__isnull=True,
+            ).exists()
+        ):
+            raise serializers.ValidationError(
+                {"can_support": "فقط مدیر ارشد می‌تواند دسترسی پشتیبانی را تغییر دهد."}
+            )
         if (
             request
             and request.user.role == User.Role.ADMIN
@@ -71,6 +86,27 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop("password")
         return User.objects.create_user(password=password, **validated_data)
+
+    def save(self, **kwargs):
+        if "can_support" not in self.validated_data and "can_support" not in kwargs:
+            return super().save(**kwargs)
+        # A role or activation change after validation must revoke the grant too.
+        with transaction.atomic():
+            request = self.context.get("request")
+            actor = (
+                User.objects.select_for_update(no_key=True)
+                .filter(
+                    pk=request.user.pk if request else None,
+                    role=User.Role.SUPER_ADMIN,
+                    is_active=True,
+                    organization__isnull=True,
+                )
+                .first()
+            )
+            if actor is None:
+                raise PermissionDenied("فقط مدیر ارشد فعال می‌تواند دسترسی پشتیبانی را تغییر دهد.")
+            request.user = actor
+            return super().save(**kwargs)
 
 
 class ProfileSerializer(serializers.ModelSerializer):

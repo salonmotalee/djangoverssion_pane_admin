@@ -35,6 +35,7 @@ import { HallForm, StudySessionForm } from "./operations-forms";
 import { AssignmentMatrix } from "./assignment-matrix";
 import { ActiveStatus, ArchiveDialog } from "./operations-common";
 import { StudentDirectory, StudentDetails } from "./student-directory";
+import { HelpTooltip } from "./help-tooltip";
 
 export function OperationsContent({
   slug,
@@ -100,35 +101,25 @@ function EntityDirectory({
       );
   return (
     <div className="ops-page">
-      <PageHeading
-        eyebrow={halls ? "فضاهایی برای تمرکز" : "ریتم روزانهٔ مطالعه"}
-        title={halls ? "سالن‌ها" : "پارت‌های مطالعاتی"}
-        description={
-          halls
-            ? "سالن‌های مجموعه را بسازید و دانش‌آموزان را در فضای مناسب سامان دهید."
-            : "از اولین ساعت صبح تا پایان روز؛ پارت‌های مستقل، مرتب و قابل تخصیص."
-        }
-      >
+      <PageHeading title={halls ? "سالن‌ها" : "پارت‌های مطالعاتی"}>
+        <HelpTooltip
+          label={halls ? "راهنمای مدیریت سالن‌ها" : "راهنمای پارت‌های مطالعاتی"}
+          content={
+            halls
+              ? "پس از ساخت سالن، دانش‌آموزان و پارت‌ها را به آن اختصاص دهید. ظرفیت ثبت‌نام بین همهٔ سالن‌ها مشترک است."
+              : "پارت‌ها بر اساس ساعت شروع مرتب می‌شوند. ساعت پایان باید بعد از شروع همان روز باشد؛ پارت شبانه پشتیبانی نمی‌شود."
+          }
+        />
         <button className="button primary" onClick={() => setEdit("new")}>
           <Plus size={18} />
           {halls ? "سالن جدید" : "پارت جدید"}
         </button>
       </PageHeading>
-      <div className="ops-directory-banner">
-        <span className={`tenant-card-icon ${halls ? "blue" : "orange"}`}>
-          {halls ? <Building2 size={25} /> : <Clock3 size={25} />}
-        </span>
-        <div>
-          <strong>
-            {halls ? "هر سالن، یک فضای رشد" : "زمان‌بندی روشن، مطالعهٔ منظم"}
-          </strong>
-          <p>
-            {halls
-              ? "ظرفیت ثبت‌نام بین همهٔ سالن‌ها مشترک است."
-              : "ساعت پایان باید بعد از شروع همان روز باشد؛ پارت شبانه در این مرحله تعریف نمی‌شود."}
-          </p>
-        </div>
-        <Link href={`/${slug}/assignments`} className="button secondary">
+      <div className="ops-directory-context">
+        <Link
+          href={`/${slug}/assignments`}
+          className="button secondary compact"
+        >
           <Grid2x2 size={16} /> تخصیص پارت‌ها
         </Link>
       </div>

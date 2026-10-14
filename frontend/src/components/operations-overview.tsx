@@ -6,9 +6,12 @@ import {
   GraduationCap,
   ArrowUpLeft,
   Users,
+  UserRoundCheck,
 } from "lucide-react";
 import { number } from "@/lib/format";
 import type { OperationsSummary } from "@/lib/operations";
+import { HelpTooltip } from "./help-tooltip";
+import { SupportIndicators } from "./support";
 
 export function OperationsOverview({
   slug,
@@ -18,6 +21,13 @@ export function OperationsOverview({
   stats: OperationsSummary;
 }) {
   const metrics = [
+    {
+      label: "مراقب فعال",
+      value: stats.active_supervisors,
+      href: "supervisors",
+      icon: UserRoundCheck,
+      color: "purple",
+    },
     {
       label: "دانش‌آموز فعال",
       value: stats.active_students,
@@ -78,12 +88,17 @@ export function OperationsOverview({
           </Link>
         ))}
       </div>
+      <SupportIndicators slug={slug} />
       <div className="ops-analytics">
         <div className="tenant-card ops-utilization">
           <div>
-            <span className="eyebrow">ظرفیت ثبت‌نام</span>
-            <h2>فضای رشد مجموعه</h2>
-            <p>تعداد دانش‌آموزان ثبت‌شدهٔ فعال در همهٔ سالن‌ها</p>
+            <h2>
+              ظرفیت ثبت‌نام
+              <HelpTooltip
+                label="راهنمای ظرفیت ثبت‌نام"
+                content="این درصد از نسبت دانش‌آموزان فعال به ظرفیت مجموعه به دست می‌آید؛ نشان‌دهندهٔ حضور فیزیکی یا اشغال میز نیست."
+              />
+            </h2>
           </div>
           <strong>
             {stats.utilization_percent === null
@@ -106,7 +121,6 @@ export function OperationsOverview({
               }}
             />
           </div>
-          <small>این آمار به معنی حضور فیزیکی یا اشغال میز نیست.</small>
         </div>
         <div className="tenant-card ops-hall-chart">
           <div className="ops-section-title">

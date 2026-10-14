@@ -19,6 +19,8 @@ router.register("users", UserViewSet, basename="user")
 router.register("audit", AuditViewSet, basename="audit")
 
 urlpatterns = [
+    path("support/", include("support.urls")),
+    path("organizations/<slug:slug>/support/", include("support.urls")),
     path("organizations/", include("portal.urls")),
     path("auth/csrf/", CsrfView.as_view()),
     path("auth/login/", LoginView.as_view()),

@@ -7,6 +7,7 @@ export const CENTRAL_ROUTES = [
   "activity",
   "alerts",
   "profile",
+  "support",
 ];
 export const RESERVED_SLUGS = new Set([
   ...CENTRAL_ROUTES,

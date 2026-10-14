@@ -11,7 +11,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  Users,
 } from "lucide-react";
 import { mutate } from "@/lib/api";
 import { date, number, queryString } from "@/lib/format";
@@ -36,6 +35,7 @@ import {
 } from "./ui";
 import { StudentForm } from "./operations-forms";
 import { ActiveStatus, ArchiveDialog } from "./operations-common";
+import { HelpTooltip } from "./help-tooltip";
 
 export function StudentDirectory({
   slug,
@@ -90,11 +90,11 @@ export function StudentDirectory({
   const rows = data.data?.results || [];
   return (
     <div className="ops-page">
-      <PageHeading
-        eyebrow="همراهان مسیر رشد"
-        title="دانش‌آموزان"
-        description="ثبت‌نام، اطلاعات تحصیلی و جابه‌جایی بین سالن‌ها؛ همه در یک فضای منظم."
-      >
+      <PageHeading title="دانش‌آموزان">
+        <HelpTooltip
+          label="راهنمای مدیریت دانش‌آموزان"
+          content="دانش‌آموزان را ثبت، ویرایش یا بین سالن‌ها منتقل کنید. دانش‌آموزان فعال از ظرفیت مشترک مجموعه استفاده می‌کنند؛ بایگانی‌شده‌ها ظرفیت اشغال نمی‌کنند."
+        />
         <button
           className="button primary"
           disabled={options.loading || !!options.error}
@@ -103,21 +103,6 @@ export function StudentDirectory({
           <Plus size={18} /> ثبت دانش‌آموز
         </button>
       </PageHeading>
-      <div className="ops-directory-banner">
-        <span className="tenant-card-icon purple">
-          <GraduationCap size={27} />
-        </span>
-        <div>
-          <strong>هر دانش‌آموز، یک مسیر تازه</strong>
-          <p>
-            دانش‌آموزان فعال از ظرفیت مشترک مجموعه استفاده می‌کنند؛
-            بایگانی‌شده‌ها ظرفیت اشغال نمی‌کنند.
-          </p>
-        </div>
-        <span className="ops-directory-count">
-          <strong>{number(data.data?.count || 0)}</strong> نتیجه
-        </span>
-      </div>
       {summary && (
         <div className="ops-enrollment-summary">
           <span>
@@ -169,6 +154,9 @@ export function StudentDirectory({
           <option value="archived">بایگانی‌شده‌ها</option>
           <option value="all">همهٔ دانش‌آموزان</option>
         </select>
+        <span className="ops-result-count">
+          {number(data.data?.count || 0)} نتیجه
+        </span>
       </div>
       <div className="ops-filters">
         <label>
@@ -597,6 +585,10 @@ export function StudentDetails({
         title={`${student.first_name} ${student.last_name}`}
         description={`شناسه ${student.identifier}`}
       >
+        <HelpTooltip
+          label="راهنمای پروندهٔ دانش‌آموز"
+          content="این پرونده اطلاعات ثبت‌نام دانش‌آموز است و حساب ورود ندارد. ویرایش اطلاعات و جابه‌جایی سالن از همین صفحه انجام می‌شود."
+        />
         <button
           className="button secondary"
           disabled={!options.data}
@@ -658,10 +650,6 @@ export function StudentDetails({
             </div>
           ))}
         </dl>
-        <p className="ops-form-note">
-          <Users size={16} /> این پرونده حساب ورود دانش‌آموز نیست؛ اطلاعات
-          ثبت‌نام توسط مجموعه مدیریت می‌شود.
-        </p>
       </section>
       {edit && (
         <StudentForm

@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   ArrowUpLeft,
   CalendarClock,
-  CircleArrowUp,
   CircleCheck,
   Clock3,
   Plus,
@@ -37,6 +36,8 @@ import {
   ViewAll,
 } from "./ui";
 import { CustomerForm } from "./customers";
+import { SupportIndicators } from "./support";
+import { HelpTooltip } from "./help-tooltip";
 import {
   date,
   displayName,
@@ -134,7 +135,7 @@ export function Dashboard() {
           >
             پاک کردن بازه
           </button>
-          <small>آمار و گزارش بر اساس تاریخ ثبت مجموعه‌ها فیلتر می‌شوند.</small>
+          <HelpTooltip content="آمار و گزارش بر اساس تاریخ ثبت مجموعه‌ها فیلتر می‌شوند." />
         </div>
       )}
       {error ? (
@@ -143,6 +144,9 @@ export function Dashboard() {
         <Spinner />
       ) : (
         <div className={`dashboard-content ${loading ? "refreshing" : ""}`}>
+          {(user?.role === "super_admin" || user?.can_support) && (
+            <SupportIndicators />
+          )}
           <div className="metric-grid">
             {[
               {
@@ -467,10 +471,6 @@ export function Dashboard() {
               <ActivityList items={data.recent_activities.slice(0, 5)} />
             </Panel>
           )}
-          <div className="dashboard-bottom-note">
-            <CircleArrowUp size={14} />
-            <span>اطلاعات مستقیماً از پایگاه داده شما دریافت می‌شود.</span>
-          </div>
         </div>
       )}
       {create && (

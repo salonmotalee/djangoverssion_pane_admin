@@ -8,7 +8,6 @@ import {
   Clock3,
   Grid2x2,
   GraduationCap,
-  ArrowUpLeft,
   CalendarDays,
   Check,
   ChevronLeft,
@@ -24,7 +23,8 @@ import {
   Phone,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
+  Headset,
+  UserRoundCheck,
   Sun,
   Users,
   X,
@@ -41,6 +41,16 @@ import {
   type OperationPage,
 } from "@/lib/operations";
 import { DamavandBrand, MountainScene } from "./portal-scene";
+import { HelpTooltip } from "./help-tooltip";
+import { Supervisors } from "./supervisors";
+import { SupportBell, SupportTickets } from "./support";
+import "../app/ux-refinement.css";
+
+export type PortalPage =
+  | "dashboard"
+  | OperationPage
+  | "supervisors"
+  | "support";
 
 export function OrganizationLogin({
   organization,
@@ -235,10 +245,14 @@ export function OrganizationDashboard({
   slug,
   page = "dashboard",
   studentId,
+  supervisorId,
+  ticketId,
 }: {
   slug: string;
-  page?: "dashboard" | OperationPage;
+  page?: PortalPage;
   studentId?: number;
+  supervisorId?: number;
+  ticketId?: number;
 }) {
   const router = useRouter();
   const [session, setSession] = useState<OrganizationSession | null>(null),
@@ -307,6 +321,14 @@ export function OrganizationDashboard({
       triggerButton?.focus();
     };
   }, [menu]);
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 901px)");
+    function closeOnDesktop() {
+      if (desktop.matches) setMenu(false);
+    }
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
   async function logout() {
     setLogoutPending(true);
     try {
@@ -358,7 +380,13 @@ export function OrganizationDashboard({
       </main>
     );
   const currentTitle =
-    page === "dashboard" ? "نمای کلی" : operationTitles[page];
+    page === "dashboard"
+      ? "نمای کلی"
+      : page === "supervisors"
+        ? "مدیریت مراقبین"
+        : page === "support"
+          ? "پشتیبانی و تیکت‌ها"
+          : operationTitles[page];
   const icons = {
     halls: Building2,
     "study-sessions": Clock3,
@@ -377,6 +405,7 @@ export function OrganizationDashboard({
         />
       )}
       <aside
+        id="tenant-navigation"
         ref={sidebar}
         className={`tenant-sidebar ${menu ? "open" : ""}`}
         role={menu ? "dialog" : undefined}
@@ -393,57 +422,75 @@ export function OrganizationDashboard({
             <X size={20} />
           </button>
         </div>
-        <div className="tenant-organization">
-          <span className="tenant-org-avatar">{org.name.slice(0, 1)}</span>
-          <div>
-            <strong>{org.name}</strong>
-            <small>فضای اختصاصی مجموعه</small>
+        <div className="tenant-side-scroll">
+          <div className="tenant-organization">
+            <span className="tenant-org-avatar">{org.name.slice(0, 1)}</span>
+            <div>
+              <strong>{org.name}</strong>
+              <small>فضای اختصاصی مجموعه</small>
+            </div>
           </div>
-        </div>
-        <span className="tenant-nav-label">فضای کار</span>
-        <nav>
-          <Link
-            href={`/${slug}/dashboard`}
-            className={page === "dashboard" ? "selected" : ""}
-            onClick={() => setMenu(false)}
-          >
-            <LayoutDashboard size={19} /> نمای کلی <ChevronLeft size={15} />
-          </Link>
-          {operationPages.map((item) => {
-            const Icon = icons[item];
-            return (
-              <Link
-                key={item}
-                href={`/${slug}/${item}`}
-                className={page === item ? "selected" : ""}
-                onClick={() => setMenu(false)}
-              >
-                <Icon size={19} />
-                {operationTitles[item]}
-                <ChevronLeft size={15} />
-              </Link>
-            );
-          })}
-          <Link
-            href={`/${slug}/dashboard#subscription`}
-            onClick={() => setMenu(false)}
-          >
-            <CalendarDays size={19} />
-            اشتراک و سرویس
-          </Link>
-          <Link
-            href={`/${slug}/dashboard#organization-profile`}
-            onClick={() => setMenu(false)}
-          >
-            <Fingerprint size={19} />
-            اطلاعات مجموعه
-          </Link>
-        </nav>
-        <div className="tenant-side-note">
-          <Sparkles size={23} />
-          <strong>فضایی برای رشد</strong>
-          <p>اطلاعات مجموعه و وضعیت سرویس، همیشه در دسترس شماست.</p>
-          <span>دماوند، همراه مسیر شما</span>
+          <span className="tenant-nav-label">فضای کار</span>
+          <nav>
+            <Link
+              href={`/${slug}/dashboard`}
+              className={page === "dashboard" ? "selected" : ""}
+              aria-current={page === "dashboard" ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              <LayoutDashboard size={19} /> نمای کلی <ChevronLeft size={15} />
+            </Link>
+            {operationPages.map((item) => {
+              const Icon = icons[item];
+              return (
+                <Link
+                  key={item}
+                  href={`/${slug}/${item}`}
+                  className={page === item ? "selected" : ""}
+                  aria-current={page === item ? "page" : undefined}
+                  onClick={() => setMenu(false)}
+                >
+                  <Icon size={19} />
+                  {operationTitles[item]}
+                  <ChevronLeft size={15} />
+                </Link>
+              );
+            })}
+            <Link
+              href={`/${slug}/supervisors`}
+              className={page === "supervisors" ? "selected" : ""}
+              aria-current={page === "supervisors" ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              <UserRoundCheck size={19} />
+              مدیریت مراقبین
+              <ChevronLeft size={15} />
+            </Link>
+            <Link
+              href={`/${slug}/support`}
+              className={page === "support" ? "selected" : ""}
+              aria-current={page === "support" ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              <Headset size={19} />
+              پشتیبانی و تیکت‌ها
+              <ChevronLeft size={15} />
+            </Link>
+            <Link
+              href={`/${slug}/dashboard#subscription`}
+              onClick={() => setMenu(false)}
+            >
+              <CalendarDays size={19} />
+              اشتراک و سرویس
+            </Link>
+            <Link
+              href={`/${slug}/dashboard#organization-profile`}
+              onClick={() => setMenu(false)}
+            >
+              <Fingerprint size={19} />
+              اطلاعات مجموعه
+            </Link>
+          </nav>
         </div>
         <div className="tenant-side-bottom">
           <span dir="ltr">@{session.username}</span>
@@ -453,7 +500,7 @@ export function OrganizationDashboard({
           </button>
         </div>
       </aside>
-      <div className="tenant-workspace">
+      <div className="tenant-workspace" inert={menu ? true : undefined}>
         <header className="tenant-topbar">
           <div>
             <button
@@ -461,6 +508,7 @@ export function OrganizationDashboard({
               className="icon-button tenant-menu-button"
               aria-label="باز کردن منوی مجموعه"
               aria-expanded={menu}
+              aria-controls="tenant-navigation"
               onClick={() => setMenu(true)}
             >
               <Menu size={22} />
@@ -476,6 +524,7 @@ export function OrganizationDashboard({
               <Sun size={16} />
               {date(sub.business_date)}
             </span>
+            <SupportBell slug={slug} />
             <button
               className="icon-button"
               aria-label="به‌روزرسانی اطلاعات مجموعه"
@@ -493,7 +542,19 @@ export function OrganizationDashboard({
           </div>
         </header>
         <main className="tenant-main" id="overview">
-          {page !== "dashboard" ? (
+          {page === "supervisors" ? (
+            <Supervisors
+              key={slug + (supervisorId || "")}
+              slug={slug}
+              supervisorId={supervisorId}
+            />
+          ) : page === "support" ? (
+            <SupportTickets
+              key={slug + (ticketId || "")}
+              slug={slug}
+              ticketId={ticketId}
+            />
+          ) : page !== "dashboard" ? (
             <OperationsContent
               key={slug + page + (studentId || "")}
               slug={slug}
@@ -506,9 +567,7 @@ export function OrganizationDashboard({
             <>
               <div className="tenant-heading">
                 <div>
-                  <span className="eyebrow">یک چشم‌انداز روشن</span>
                   <h1>سلام، {org.manager_name}</h1>
-                  <p>به فضای اختصاصی {org.name} خوش آمدید.</p>
                 </div>
                 <Badge status={sub.status} />
               </div>
@@ -536,54 +595,23 @@ export function OrganizationDashboard({
                   </div>
                 </div>
               )}
-              <div className="tenant-overview-grid">
-                <section className="tenant-welcome">
-                  <div className="tenant-welcome-art" aria-hidden="true">
-                    <Mountain size={145} strokeWidth={0.7} />
-                    <div />
-                  </div>
-                  <span className="tenant-chip">
-                    <Sparkles size={14} />
-                    همراه مسیر شما
-                  </span>
-                  <h2>
-                    تمرکز شما بر رشد،
-                    <br />
-                    نظم مجموعه با دماوند.
-                  </h2>
-                  <p>
-                    اطلاعات اصلی مجموعه و جزئیات اشتراک شما،
-                    <br />
-                    همه در یک فضای روشن و آرام.
-                  </p>
-                  <a href="#organization-profile">
-                    مشاهده اطلاعات مجموعه
-                    <ArrowUpLeft size={17} />
-                  </a>
-                </section>
-                <section className="tenant-card tenant-capacity">
-                  <div className="tenant-card-icon turquoise">
-                    <Users size={24} />
-                  </div>
-                  <span className="tenant-card-kicker">ظرفیت مجموعه</span>
-                  <div
-                    className="tenant-capacity-value"
-                    data-testid="tenant-capacity"
-                  >
-                    {org.capacity === null ? "—" : number(org.capacity)}
-                    <small>نفر</small>
-                  </div>
-                  <p>حداکثر ظرفیت ثبت‌شدهٔ {org.name}</p>
-                  <div className="capacity-decoration" aria-hidden="true">
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <span key={i} />
-                    ))}
-                  </div>
-                  <small className="capacity-footnote">
-                    سقف دانش‌آموزان فعال در مجموع همهٔ سالن‌ها.
-                  </small>
-                </section>
-              </div>
+              <section
+                className="tenant-summary-strip"
+                aria-label="ظرفیت مجموعه"
+              >
+                <div className="tenant-card-icon turquoise">
+                  <Users size={21} />
+                </div>
+                <h2>ظرفیت مجموعه</h2>
+                <HelpTooltip
+                  label="راهنمای ظرفیت مجموعه"
+                  content="ظرفیت مجموعه، سقف دانش‌آموزان فعال در مجموع همهٔ سالن‌هاست. برای تغییر ظرفیت با مدیریت دماوند هماهنگ کنید."
+                />
+                <strong data-testid="tenant-capacity">
+                  {org.capacity === null ? "—" : number(org.capacity)}
+                  <small>نفر</small>
+                </strong>
+              </section>
               {session.operations && (
                 <OperationsOverview slug={slug} stats={session.operations} />
               )}
@@ -597,8 +625,13 @@ export function OrganizationDashboard({
                       <CalendarDays size={22} />
                     </div>
                     <div>
-                      <h2>اشتراک مجموعه</h2>
-                      <p>زمان‌بندی و وضعیت سرویس</p>
+                      <h2>
+                        اشتراک مجموعه
+                        <HelpTooltip
+                          label="راهنمای اشتراک مجموعه"
+                          content="وضعیت اشتراک از تاریخ آغاز تا پایان محاسبه می‌شود. روز پایان سرویس نیز در روزهای باقی‌مانده لحاظ شده است."
+                        />
+                      </h2>
                     </div>
                     <Badge status={sub.status} />
                   </div>
@@ -652,9 +685,6 @@ export function OrganizationDashboard({
                   >
                     <span style={{ width: `${sub.progress_percent}%` }} />
                   </div>
-                  <p className="subscription-end-note">
-                    روز پایان سرویس در محاسبهٔ روزهای باقی‌مانده لحاظ شده است.
-                  </p>
                 </section>
                 <section
                   className="tenant-card tenant-profile"
@@ -665,8 +695,13 @@ export function OrganizationDashboard({
                       <Fingerprint size={22} />
                     </div>
                     <div>
-                      <h2>شناسنامهٔ مجموعه</h2>
-                      <p>اطلاعات ثبت‌شده در مدیریت دماوند</p>
+                      <h2>
+                        شناسنامهٔ مجموعه
+                        <HelpTooltip
+                          label="راهنمای اطلاعات مجموعه"
+                          content="این اطلاعات در مدیریت دماوند ثبت شده است. برای اصلاح اطلاعات با مدیریت دماوند هماهنگ کنید."
+                        />
+                      </h2>
                     </div>
                   </div>
                   <dl>
@@ -696,21 +731,10 @@ export function OrganizationDashboard({
                       <dd dir="ltr">/{org.slug}</dd>
                     </div>
                   </dl>
-                  <p>
-                    <ShieldCheck size={15} />
-                    برای اصلاح اطلاعات، با مدیریت دماوند هماهنگ کنید.
-                  </p>
                 </section>
               </div>
             </>
           )}
-          <footer className="tenant-footer">
-            <span>دماوند · مدیریت با چشم‌انداز</span>
-            <span>
-              <ShieldCheck size={14} />
-              فضای اختصاصی {org.name}
-            </span>
-          </footer>
         </main>
       </div>
     </div>

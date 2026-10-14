@@ -396,7 +396,8 @@ class OperationsMigrationTests(TransactionTestCase):
     def test_additive_migration_preserves_customers_and_portal_accounts(self):
         executor = MigrationExecutor(connection)
         latest = executor.loader.graph.leaf_nodes()
-        executor.migrate([("operations", None)])
+        previous = [("operations", None), ("core", "0003_organization_portal")]
+        executor.migrate(previous)
         try:
             old = executor.loader.project_state([("core", "0003_organization_portal")]).apps
             customer = old.get_model("core", "Customer").objects.create(

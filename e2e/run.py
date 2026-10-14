@@ -94,7 +94,11 @@ def exercise(browser, username: str, password: str) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dev", action="store_true", help="Exercise the combined npm development launcher")
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Exercise the combined npm development launcher",
+    )
     args = parser.parse_args()
     if not PYTHON.is_file() or not NPM:
         raise RuntimeError("Install the backend .venv and Node/npm first (see README)")
@@ -120,6 +124,10 @@ def main() -> None:
         "operations-students.png",
         "operations-students-mobile.png",
         "operations-dashboard.png",
+        "phase4-failure.png",
+        "phase4-supervisor.png",
+        "phase4-support.png",
+        "phase4-mobile.png",
     ):
         (ARTIFACTS / name).unlink(missing_ok=True)
     servers: list[subprocess.Popen] = []
@@ -190,7 +198,13 @@ def main() -> None:
                 ),
             )
             if args.dev:
-                services = (("frontend", [str(NPM), "run", "dev", "--", "--port", "3000"], FRONTEND),)
+                services = (
+                    (
+                        "frontend",
+                        [str(NPM), "run", "dev", "--", "--port", "3000"],
+                        FRONTEND,
+                    ),
+                )
             for name, command, directory in services:
                 handle = (ARTIFACTS / f"{name}.log").open("w", encoding="utf-8")
                 handles.append(handle)

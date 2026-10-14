@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Check, Grid2x2, RotateCcw, Save, Search } from "lucide-react";
+import { Check, RotateCcw, Save, Search } from "lucide-react";
 import { mutate } from "@/lib/api";
 import { number } from "@/lib/format";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/lib/operations";
 import { useData } from "@/lib/use-data";
 import { Empty, ErrorState, InlineError, PageHeading, Spinner } from "./ui";
+import { HelpTooltip } from "./help-tooltip";
 
 export function AssignmentMatrix({
   slug,
@@ -74,11 +75,12 @@ function MatrixEditor({
   }
   return (
     <div className="ops-page">
-      <PageHeading
-        eyebrow="یک برنامه، چند سالن"
-        title="تخصیص پارت‌ها"
-        description="سطر، ستون یا هر خانه را انتخاب کنید؛ تغییرات با یک ذخیره ثبت می‌شوند."
-      />
+      <PageHeading title="تخصیص پارت‌ها">
+        <HelpTooltip
+          label="راهنمای تخصیص پارت‌ها"
+          content="هر خانه، یک پارت در یک سالن است. انتخاب سطر یا ستون، همهٔ خانه‌های آن را تغییر می‌دهد. پارت‌ها به ترتیب ساعت شروع هستند. برای ثبت تغییرات دکمهٔ ذخیره تخصیص‌ها را بزنید."
+        />
+      </PageHeading>
       <InlineError message={error} />
       {saved && (
         <div className="ops-success" role="status">
@@ -105,16 +107,12 @@ function MatrixEditor({
         />
       ) : (
         <>
-          <div className="ops-matrix-intro">
-            <span className="tenant-card-icon purple">
-              <Grid2x2 size={25} />
-            </span>
+          <div className="ops-matrix-summary">
             <div>
-              <strong>برنامهٔ مطالعاتی مجموعه</strong>
-              <p>
+              <span>
                 {number(data.halls.length)} سالن · {number(sessions.length)}{" "}
                 پارت · {number(selected.size)} تخصیص
-              </p>
+              </span>
             </div>
             <span className={`ops-status ${dirty ? "draft" : "active"}`}>
               {dirty ? "تغییرات ذخیره نشده" : "برنامهٔ ذخیره‌شده"}
@@ -164,9 +162,7 @@ function MatrixEditor({
               </caption>
               <thead>
                 <tr>
-                  <th>
-                    سالن / پارت <small>به ترتیب ساعت شروع</small>
-                  </th>
+                  <th>سالن / پارت</th>
                   {sessions.map((session) => (
                     <th key={session.id}>
                       <label>
@@ -260,7 +256,6 @@ function MatrixEditor({
           <div className="ops-save-bar">
             <div>
               <strong>{number(selected.size)} تخصیص انتخاب شده</strong>
-              <small>پارت‌ها در همهٔ صفحات بر اساس ساعت شروع مرتب‌اند.</small>
             </div>
             <div className="heading-actions">
               <button

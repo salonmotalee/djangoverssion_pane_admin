@@ -90,7 +90,9 @@ def run_workflows(browser, username: str, password: str, artifacts: Path) -> int
         form.locator('input[name="username"]').fill(username)
         form.locator('input[name="password"]').fill(password)
         form.get_by_role("button", name="ورود به مدار").click()
-        expect(page.get_by_text("سرویس ورود در دسترس نیست. کمی بعد دوباره تلاش کنید.")).to_be_visible()
+        expect(
+            page.get_by_text("سرویس ورود در دسترس نیست. کمی بعد دوباره تلاش کنید.")
+        ).to_be_visible()
         assert not any(url.endswith("/api/auth/login/") for url in attempts)
         page.unroute("**/api/auth/csrf/")
         attempts.clear()
@@ -114,6 +116,10 @@ def run_workflows(browser, username: str, password: str, artifacts: Path) -> int
         from tenant_workflows import run_tenant_workflows
 
         checks += run_tenant_workflows(page, context, artifacts)
+
+        from phase4_workflows import run_phase4_workflows
+
+        checks += run_phase4_workflows(page, context, artifacts)
 
         assert not errors, "Browser runtime errors: " + "; ".join(errors)
         return checks

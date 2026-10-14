@@ -1,8 +1,10 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from core.serializers import CustomerSerializer
 
-from .models import Hall, Student, StudySession
+from .models import Hall, Student, StudySession, Supervisor
+from .services import assign_supervisor_halls
 
 
 def digits(value):
@@ -147,3 +149,70 @@ class BulkStudentSerializer(serializers.Serializer):
         if attrs["action"] == "transfer" and "hall" not in attrs:
             raise serializers.ValidationError({"hall": "سالن مقصد را انتخاب کنید."})
         return attrs
+
+
+class SupervisorHallDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hall
+        fields = ["id", "name", "is_active"]
+        read_only_fields = fields
+
+
+class SupervisorSerializer(ScopedSerializer):
+    phone = serializers.CharField(max_length=24)
+    halls = serializers.PrimaryKeyRelatedField(queryset=Hall.objects.none(), many=True, required=False)
+    hall_details = SupervisorHallDetailsSerializer(source="halls", many=True, read_only=True)
+
+    class Meta:
+        model = Supervisor
+        fields = [
+            *COMMON,
+            "first_name",
+            "last_name",
+            "phone",
+            "archived_at",
+            "halls",
+            "hall_details",
+        ]
+        read_only_fields = [*READONLY, "archived_at", "hall_details"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        organization = self.context.get("organization")
+        if organization:
+            self.fields["halls"].child_relation.queryset = Hall.objects.filter(
+                organization=organization, is_active=True
+            )
+
+    def validate_phone(self, value):
+        return CustomerSerializer().validate_phone(value)
+
+    def validate_halls(self, value):
+        if len({hall.pk for hall in value}) != len(value):
+            raise serializers.ValidationError("سالن‌های تکراری مجاز نیستند.")
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if self.instance and self.instance.archived_at is not None:
+            raise serializers.ValidationError("ابتدا مراقب بایگانی‌شده را بازیابی کنید.")
+        return attrs
+
+    def create(self, validated_data):
+        halls = validated_data.pop("halls", [])
+        try:
+            supervisor = super().create(validated_data)
+            assign_supervisor_halls(supervisor, halls)
+            return supervisor
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(getattr(exc, "message_dict", None) or exc.messages) from exc
+
+    def update(self, instance, validated_data):
+        halls = validated_data.pop("halls", None)
+        try:
+            supervisor = super().update(instance, validated_data)
+            if halls is not None:
+                assign_supervisor_halls(supervisor, halls)
+            return supervisor
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(getattr(exc, "message_dict", None) or exc.messages) from exc

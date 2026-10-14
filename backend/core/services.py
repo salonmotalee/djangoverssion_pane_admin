@@ -20,7 +20,7 @@ CUSTOMER_FIELDS = (
     "expiration_date",
     "deleted_at",
 )
-USER_FIELDS = ("username", "first_name", "last_name", "email", "role", "is_active")
+USER_FIELDS = ("username", "first_name", "last_name", "email", "role", "is_active", "can_support")
 
 
 def snapshot(instance, fields):
