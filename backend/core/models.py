@@ -110,6 +110,7 @@ class Customer(models.Model):
     )
     # Unknown legacy capacities remain unknown until explicitly configured.
     capacity = models.PositiveIntegerField(null=True, blank=True)
+    appearance = models.JSONField(default=dict, blank=True)
     start_date = models.DateField(db_index=True)
     expiration_date = models.DateField(db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)

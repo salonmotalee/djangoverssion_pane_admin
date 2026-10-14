@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,6 +20,7 @@ import {
   LogOut,
   Menu,
   Mountain,
+  Palette,
   Phone,
   RefreshCw,
   ShieldCheck,
@@ -44,12 +45,20 @@ import { DamavandBrand, MountainScene } from "./portal-scene";
 import { HelpTooltip } from "./help-tooltip";
 import { Supervisors } from "./supervisors";
 import { SupportBell, SupportTickets } from "./support";
+import { AppearanceSettings, useThemeMode } from "./appearance";
+import {
+  normalizeAppearance,
+  themeVariables,
+  type Appearance,
+} from "@/lib/appearance";
 import "../app/ux-refinement.css";
+import "../app/appearance.css";
 
 export type PortalPage =
   | "dashboard"
   | OperationPage
   | "supervisors"
+  | "appearance"
   | "support";
 
 export function OrganizationLogin({
@@ -264,6 +273,15 @@ export function OrganizationDashboard({
     [logoutPending, setLogoutPending] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null),
     sidebar = useRef<HTMLElement>(null);
+  const [appearanceDraft, setAppearanceDraft] = useState<Appearance | null>(
+    null,
+  );
+  const savedAppearance = normalizeAppearance(session?.organization.appearance);
+  const appearance =
+    page === "appearance" && appearanceDraft
+      ? appearanceDraft
+      : savedAppearance;
+  const themeMode = useThemeMode(appearance);
   useEffect(() => {
     let alive = true;
     api<OrganizationSession>(`organizations/${slug}/dashboard/`)
@@ -386,7 +404,9 @@ export function OrganizationDashboard({
         ? "مدیریت مراقبین"
         : page === "support"
           ? "پشتیبانی و تیکت‌ها"
-          : operationTitles[page];
+          : page === "appearance"
+            ? "تنظیمات ظاهر"
+            : operationTitles[page];
   const icons = {
     halls: Building2,
     "study-sessions": Clock3,
@@ -396,7 +416,11 @@ export function OrganizationDashboard({
   const org = session.organization,
     sub = org.subscription;
   return (
-    <div className="tenant-shell">
+    <div
+      className="tenant-shell"
+      data-theme={themeMode}
+      style={themeVariables(appearance.palettes[themeMode]) as CSSProperties}
+    >
       {menu && (
         <div
           className="tenant-menu-scrim"
@@ -477,6 +501,16 @@ export function OrganizationDashboard({
               <ChevronLeft size={15} />
             </Link>
             <Link
+              href={`/${slug}/appearance`}
+              className={page === "appearance" ? "selected" : ""}
+              aria-current={page === "appearance" ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              <Palette size={19} />
+              تنظیمات ظاهر
+              <ChevronLeft size={15} />
+            </Link>
+            <Link
               href={`/${slug}/dashboard#subscription`}
               onClick={() => setMenu(false)}
             >
@@ -542,7 +576,36 @@ export function OrganizationDashboard({
           </div>
         </header>
         <main className="tenant-main" id="overview">
-          {page === "supervisors" ? (
+          {page === "appearance" ? (
+            <AppearanceSettings
+              appearance={appearance}
+              mode={themeMode}
+              dirty={
+                JSON.stringify(appearance) !== JSON.stringify(savedAppearance)
+              }
+              onChange={setAppearanceDraft}
+              onCancel={() => setAppearanceDraft(null)}
+              onSave={async (next) => {
+                const result = await mutate<Appearance>(
+                  `organizations/${slug}/appearance/`,
+                  "PUT",
+                  next,
+                );
+                setSession((current) =>
+                  current
+                    ? {
+                        ...current,
+                        organization: {
+                          ...current.organization,
+                          appearance: result,
+                        },
+                      }
+                    : current,
+                );
+                setAppearanceDraft(null);
+              }}
+            />
+          ) : page === "supervisors" ? (
             <Supervisors
               key={slug + (supervisorId || "")}
               slug={slug}

@@ -50,7 +50,7 @@ export type OrganizationPublic = { name: string; slug: string };
 export type OrganizationSession = {
   username: string;
   operations?: import("./operations").OperationsSummary;
-  organization: Pick<
+  organization: { appearance: import("./appearance").Appearance } & Pick<
     Customer,
     | "name"
     | "manager_name"

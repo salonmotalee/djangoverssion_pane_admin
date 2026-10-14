@@ -1,0 +1,643 @@
+/* Keep customization within the authenticated organization's portal. */
+.tenant-shell[data-theme] {
+  --ink: var(--appearance-text);
+  --muted: color-mix(
+    in srgb,
+    var(--appearance-text) 75%,
+    var(--appearance-surface)
+  );
+  --line: color-mix(
+    in srgb,
+    var(--appearance-text) 18%,
+    var(--appearance-surface)
+  );
+  --primary: var(--appearance-accent);
+  --primary-dark: var(--appearance-accent);
+  --surface: var(--appearance-surface);
+  --appearance-soft: color-mix(
+    in srgb,
+    var(--appearance-text) 5%,
+    var(--appearance-surface)
+  );
+  --appearance-tint: color-mix(
+    in srgb,
+    var(--appearance-primary) 10%,
+    var(--appearance-surface)
+  );
+  background: var(--appearance-background);
+  color: var(--appearance-background-text);
+  color-scheme: light;
+}
+.tenant-shell[data-theme="dark"] {
+  color-scheme: dark;
+}
+.tenant-shell[data-theme] :is(input, select, textarea) {
+  background: var(--appearance-surface);
+  color: var(--appearance-text);
+  border-color: var(--line);
+  accent-color: var(--appearance-primary);
+}
+.tenant-shell[data-theme] :is(input, select, textarea)::placeholder {
+  color: var(--muted);
+}
+.tenant-shell[data-theme] :is(input, select, textarea):focus {
+  border-color: var(--appearance-accent);
+  box-shadow: 0 0 0 3px var(--appearance-tint);
+}
+.tenant-shell[data-theme] :focus-visible {
+  outline-color: var(--appearance-accent);
+}
+.tenant-shell[data-theme]
+  :is(
+    .tenant-topbar,
+    .tenant-card,
+    .tenant-summary-strip,
+    .tenant-future,
+    .ops-table-card,
+    .ops-matrix-scroll,
+    .ops-metric,
+    .ops-save-bar,
+    .panel,
+    .modal,
+    .support-notification-panel,
+    .support-indicators,
+    .support-message,
+    .supervisor-toolbar
+  ) {
+  background: var(--appearance-surface);
+  color: var(--appearance-text);
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(
+    h2,
+    h3,
+    .panel-heading h2,
+    .modal-heading h2,
+    .ops-table strong,
+    .ops-table td,
+    .ops-save-bar strong,
+    .ops-metric strong,
+    .tenant-topbar strong,
+    .tenant-capacity-value,
+    .tenant-profile dd,
+    .subscription-duration strong,
+    .subscription-dates strong,
+    .tenant-summary-strip > strong,
+    .supervisor-name,
+    .supervisor-detail-info dd,
+    .supervisor-hall-picker legend,
+    .support-message p,
+    .support-ticket-details dd,
+    .ops-student-profile dd,
+    .ops-directory-banner strong,
+    .ops-matrix-intro strong,
+    .ops-profile-heading h2
+  ) {
+  color: var(--appearance-text);
+}
+.tenant-shell[data-theme] :is(.page-heading h1, .tenant-heading h1) {
+  color: var(--appearance-background-text);
+}
+.tenant-shell[data-theme]
+  :is(
+    .tenant-heading p,
+    .page-heading p,
+    .ops-result-count,
+    .ops-muted,
+    .ops-back,
+    .support-list-summary
+  ) {
+  color: color-mix(
+    in srgb,
+    var(--appearance-background-text) 80%,
+    var(--appearance-background)
+  );
+}
+.tenant-shell[data-theme]
+  :is(
+    .tenant-topbar > div > span:not(.tenant-user-mark),
+    .tenant-topbar .tenant-today,
+    .tenant-card-kicker,
+    .tenant-card-heading p,
+    .tenant-capacity-value > small,
+    .tenant-capacity > p,
+    .capacity-footnote,
+    .subscription-ring span,
+    .subscription-duration > span,
+    .subscription-duration p,
+    .subscription-dates span,
+    .subscription-end-note,
+    .tenant-profile dt,
+    .tenant-profile > p,
+    .tenant-future p,
+    .tenant-summary-strip > strong small,
+    .panel-heading p,
+    .modal-heading p,
+    .field > span,
+    .field > label,
+    .field small,
+    .empty-state p,
+    .loading-state,
+    .pagination,
+    .ops-table th,
+    .ops-table small,
+    .ops-cell-subtitle,
+    .ops-filters label,
+    .ops-form-note,
+    .ops-form-section p,
+    .ops-form-section > span,
+    .ops-matrix th small,
+    .ops-save-bar small,
+    .ops-profile-heading p,
+    .ops-student-profile dt,
+    .ops-metric > span:nth-child(2),
+    .ops-utilization p,
+    .ops-utilization > small,
+    .ops-hall-bar,
+    .supervisor-muted,
+    .supervisor-hall-total,
+    .supervisor-name small,
+    .supervisor-table-heading span,
+    .supervisor-hall-picker p,
+    .supervisor-hall-choice,
+    .supervisor-confirm-description,
+    .supervisor-detail-info dt,
+    .supervisor-assigned-hall small,
+    .support-notification-item span > span,
+    .support-ticket-title p,
+    .support-ticket-main p,
+    .support-ticket-subject small,
+    .support-ticket-meta,
+    .support-ticket-state > small,
+    .support-message-author small,
+    .support-message time,
+    .support-composer-footer small,
+    .support-closed-note,
+    .support-closed-note strong,
+    .support-ticket-footnote,
+    .support-status-history summary,
+    .support-status-history small,
+    .support-ticket-details dt,
+    .support-ticket-details dd small,
+    .icon-button,
+    .help-tooltip-trigger
+  ) {
+  color: var(--muted);
+}
+.tenant-shell[data-theme]
+  :is(
+    .tenant-profile dl > div,
+    .ops-table td,
+    .ops-table th,
+    .ops-matrix td,
+    .ops-student-profile dl > div,
+    .ops-profile-heading,
+    .supervisor-table-heading,
+    .supervisor-detail-info > div,
+    .supervisor-hall-picker,
+    .supervisor-hall-choice,
+    .supervisor-assigned-hall,
+    .supervisor-hall-picker .supervisor-archive-hint,
+    .support-notification-item,
+    .support-status-history li,
+    .modal-footer
+  ) {
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(
+    .ops-table th,
+    .ops-matrix thead th,
+    .ops-matrix tbody th,
+    .ops-filters,
+    .tenant-profile > p,
+    .ops-form-note,
+    .supervisor-table-heading,
+    .supervisor-assigned-hall,
+    .support-search,
+    .support-messages,
+    .support-ticket-symbol,
+    .support-day-divider span,
+    .support-status,
+    .ops-status.archived,
+    .supervisor-status.archived,
+    .supervisor-hall-tag.archived,
+    .badge.deleted
+  ) {
+  background: var(--appearance-soft);
+  color: var(--muted);
+}
+.tenant-shell[data-theme]
+  :is(.ops-directory-banner, .ops-matrix-intro, .tenant-welcome) {
+  background: linear-gradient(
+    110deg,
+    var(--appearance-tint),
+    var(--appearance-surface)
+  );
+  border-color: var(--line);
+  color: var(--appearance-text);
+}
+.tenant-shell[data-theme]
+  :is(.ops-directory-banner p, .ops-matrix-intro p, .tenant-welcome p) {
+  color: var(--muted);
+}
+.tenant-shell[data-theme]
+  :is(
+    .ops-table tbody tr:hover,
+    .ops-table tbody tr.selected,
+    .ops-bulk-bar,
+    .ops-enrollment-summary,
+    .tenant-user-mark,
+    .ops-number-link,
+    .ops-mini-icon,
+    .ops-avatar,
+    .ops-profile-avatar,
+    .tenant-card-icon,
+    .supervisor-avatar,
+    .supervisor-hall-tag,
+    .supervisor-hall-choice.selected,
+    .support-notification-symbol,
+    .support-ticket-symbol.unread,
+    .support-notification-item.unread,
+    .support-notification-item:hover,
+    .support-ticket-row:hover,
+    .support-ticket-row:focus-visible,
+    .support-queue-filters button.selected,
+    .support-message.mine,
+    .support-status-awaiting_customer,
+    .tenant-future > span,
+    .ops-form-section > span,
+    .empty-icon
+  ) {
+  background: var(--appearance-tint);
+  color: var(--appearance-accent);
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(
+    .ops-directory-count strong,
+    .ops-utilization > strong,
+    .ops-section-title a,
+    .ops-hall-bar strong,
+    .ops-enrollment-summary span strong,
+    .subscription-ring strong,
+    .tenant-welcome a,
+    .supervisor-selection-count,
+    .appearance-preview-link
+  ) {
+  color: var(--appearance-accent);
+}
+.tenant-shell[data-theme] .ops-clock {
+  color: var(--appearance-accent) !important;
+}
+.tenant-shell[data-theme] .ops-matrix-cell span {
+  color: var(--muted);
+  border-color: var(--line);
+}
+.tenant-shell[data-theme] .ops-matrix-cell.checked span {
+  background: var(--appearance-tint);
+  color: var(--appearance-accent);
+  border-color: var(--appearance-accent);
+}
+.tenant-shell[data-theme] .button.primary {
+  background: var(--appearance-primary);
+  border-color: var(--appearance-primary);
+  color: var(--appearance-on-primary);
+  box-shadow: none;
+}
+.tenant-shell[data-theme] .button.primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+.tenant-shell[data-theme] :is(.button.secondary, .button.subtle) {
+  background: var(--appearance-surface);
+  color: var(--appearance-text);
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(.button.secondary, .icon-button, .help-tooltip-trigger):hover {
+  color: var(--appearance-accent);
+  background: var(--appearance-tint);
+}
+.tenant-shell[data-theme]
+  :is(
+    .badge.active,
+    .ops-status.active,
+    .ops-success,
+    .supervisor-status,
+    .supervisor-notice,
+    .support-status-resolved
+  ) {
+  color: var(--appearance-success);
+  background: color-mix(
+    in srgb,
+    var(--appearance-success) 10%,
+    var(--appearance-surface)
+  );
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(
+    .badge.expiring,
+    .ops-status.draft,
+    .ops-warning,
+    .ops-archive-note,
+    .supervisor-status.inactive,
+    .supervisor-archive-note,
+    .support-status-open,
+    .support-status-awaiting_support,
+    .tenant-notice
+  ) {
+  color: var(--appearance-warning);
+  background: color-mix(
+    in srgb,
+    var(--appearance-warning) 10%,
+    var(--appearance-surface)
+  );
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(.badge.expired, .tenant-notice.expired, .form-error, .button.danger) {
+  color: var(--appearance-danger);
+  background: color-mix(
+    in srgb,
+    var(--appearance-danger) 10%,
+    var(--appearance-surface)
+  );
+  border-color: var(--line);
+}
+.tenant-shell[data-theme] :is(.badge.scheduled, .tenant-notice.scheduled) {
+  background: var(--appearance-tint);
+  color: var(--appearance-accent);
+  border-color: var(--line);
+}
+.tenant-shell[data-theme] .tenant-notice p {
+  color: inherit;
+}
+.tenant-shell[data-theme]
+  :is(.ops-capacity-alert, .support-list-summary span + span) {
+  color: var(--appearance-warning);
+}
+.tenant-shell[data-theme]
+  :is(.support-priority-high, .support-priority-urgent, .field b) {
+  color: var(--appearance-danger);
+}
+.tenant-shell[data-theme] .support-bell-count {
+  background: var(--appearance-danger);
+  color: var(--appearance-on-danger);
+  border-color: var(--appearance-surface);
+}
+.tenant-shell[data-theme]
+  :is(.ops-meter, .ops-hall-bar > div, .subscription-progress) {
+  background: var(--appearance-tint);
+}
+.tenant-shell[data-theme]
+  :is(.ops-meter > span, .ops-hall-bar i, .subscription-progress > span) {
+  background: var(--appearance-primary);
+}
+.tenant-shell[data-theme] .subscription-ring {
+  background: conic-gradient(
+    from 180deg,
+    var(--appearance-primary) var(--progress),
+    var(--appearance-tint) 0
+  );
+}
+.tenant-shell[data-theme] .subscription-ring.expired {
+  background: var(--appearance-danger);
+}
+.tenant-shell[data-theme] .subscription-ring > div {
+  background: var(--appearance-surface);
+  box-shadow: none;
+}
+.tenant-shell[data-theme] .subscription-dates i {
+  background: var(--appearance-primary);
+}
+.tenant-shell[data-theme] .tenant-sidebar {
+  background: var(--appearance-sidebar);
+  color: var(--appearance-sidebar-text);
+  --line: color-mix(
+    in srgb,
+    var(--appearance-sidebar-text) 18%,
+    var(--appearance-sidebar)
+  );
+}
+.tenant-shell[data-theme] :is(.tenant-organization, .tenant-side-bottom) {
+  border-color: var(--line);
+}
+.tenant-shell[data-theme]
+  :is(
+    .tenant-sidebar nav a,
+    .tenant-nav-label,
+    .tenant-organization small,
+    .tenant-side-bottom > span,
+    .tenant-side-bottom button,
+    .tenant-mobile-close
+  ) {
+  color: color-mix(
+    in srgb,
+    var(--appearance-sidebar-text) 80%,
+    var(--appearance-sidebar)
+  );
+}
+.tenant-shell[data-theme] .tenant-sidebar nav a.selected,
+.tenant-shell[data-theme] .tenant-sidebar nav a:hover,
+.tenant-shell[data-theme] .tenant-side-bottom button:hover {
+  background: color-mix(
+    in srgb,
+    var(--appearance-sidebar-text) 12%,
+    var(--appearance-sidebar)
+  );
+  color: var(--appearance-sidebar-text);
+  box-shadow: none;
+}
+.tenant-shell[data-theme] .tenant-sidebar :focus-visible {
+  outline-color: var(--appearance-sidebar-text);
+}
+.tenant-shell[data-theme] .tenant-org-avatar {
+  background: var(--appearance-primary);
+  color: var(--appearance-on-primary);
+}
+.tenant-shell[data-theme] .damavand-brand > svg {
+  color: inherit;
+}
+.tenant-shell[data-theme] .tenant-footer {
+  color: color-mix(
+    in srgb,
+    var(--appearance-background-text) 75%,
+    var(--appearance-background)
+  );
+}
+.appearance-controls {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.appearance-section {
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.appearance-section h2 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.appearance-section p {
+  font-size: 12px;
+  line-height: 2;
+  color: var(--muted);
+}
+.appearance-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.appearance-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+.appearance-mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 24px 14px;
+  background: var(--appearance-soft);
+  color: var(--appearance-text);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  font-size: 13px;
+  min-height: 100px;
+}
+.appearance-mode.selected {
+  border-color: var(--appearance-accent);
+  background: var(--appearance-tint);
+}
+.appearance-colors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.appearance-color-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.appearance-color-picker {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 12px;
+  cursor: pointer;
+}
+.appearance-color-picker > span {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--appearance-text);
+}
+.appearance-color-picker small {
+  grid-column: 2;
+  font-size: 10px;
+  color: var(--muted);
+}
+.appearance-color-picker input[type="color"] {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.appearance-hex input {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+}
+.appearance-color-error {
+  grid-column: 1 / -1;
+  color: var(--appearance-danger);
+  font-size: 11px;
+}
+.appearance-preview-elements {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.appearance-preview-elements .button {
+  cursor: default;
+}
+.appearance-preview-link {
+  font-size: 12px;
+}
+.appearance-save-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.appearance-save-status {
+  color: var(--appearance-background-text);
+  font-size: 12px;
+  line-height: 2;
+}
+.appearance-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.appearance-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .appearance-colors {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .appearance-section {
+    padding: 18px;
+  }
+  .appearance-modes {
+    gap: 8px;
+  }
+  .appearance-mode {
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 8px;
+    font-size: 11px;
+  }
+  .appearance-color-field {
+    grid-template-columns: minmax(0, 1fr) 95px;
+    padding: 12px;
+    gap: 8px;
+  }
+  .appearance-color-picker {
+    column-gap: 8px;
+  }
+  .appearance-save-actions {
+    width: 100%;
+  }
+  .appearance-save-actions .button {
+    flex: 1;
+  }
+}
